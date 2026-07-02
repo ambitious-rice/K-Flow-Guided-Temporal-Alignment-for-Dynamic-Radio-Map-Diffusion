@@ -120,6 +120,17 @@ checkpoints*/
 eval_*/
 experiments/
 visualizations*/
+runs/
+archive/old_checkpoints/
+archive/old_experiments/
+archive/old_logs/
+
+# Keep the required baseline checkpoint under versioned LFS.
+!runs/
+!runs/baselines/
+!runs/baselines/checkpoints/
+!runs/baselines/checkpoints/checkpoints_dynamic_rmdm_4gpu_no_ckpt_75k/
+!runs/baselines/checkpoints/checkpoints_dynamic_rmdm_4gpu_no_ckpt_75k/model_phy_step65000.pth
 
 # Temporary files
 tmp/

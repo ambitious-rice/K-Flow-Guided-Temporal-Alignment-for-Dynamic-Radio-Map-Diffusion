@@ -140,7 +140,7 @@ done
 
 wait
 log "all eval shards finished; merging"
-"$PY" merge_temporal_pinn_paired_shards.py \
+"$PY" experimental/timestep_adagn/merge_temporal_pinn_paired_shards.py \
   --output_dir "$OUT/merged" \
   --shard_dirs "${SHARD_DIRS[@]}" \
   > "$OUT/merge.log" 2>&1

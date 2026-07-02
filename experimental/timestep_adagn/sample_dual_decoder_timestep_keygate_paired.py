@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 import argparse
 from pathlib import Path
 
@@ -21,6 +23,15 @@ from lib.dynamic_clip_loaders import DynamicRadioMapRMDMClip
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    def str2bool(value: str | bool) -> bool:
+        if isinstance(value, bool):
+            return value
+        value = value.lower()
+        if value in {"1", "true", "yes", "y", "on"}:
+            return True
+        if value in {"0", "false", "no", "n", "off"}:
+            return False
+        raise argparse.ArgumentTypeError(f"invalid boolean value: {value}")
     parser.add_argument("--data_dir", required=True)
     parser.add_argument("--split", choices=("train", "val", "test"), default="test")
     parser.add_argument("--split_file", default="split.json")
@@ -43,6 +54,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--ddim_steps", type=int, default=20)
     parser.add_argument("--ddim_eta", type=float, default=1.0)
+    parser.add_argument("--deterministic_variance_noise", type=str2bool, default=True)
     parser.add_argument("--diffusion_steps", type=int, default=1000)
     parser.add_argument("--noise_schedule", choices=("linear", "cosine"), default="linear")
     parser.add_argument("--seed", type=int, default=1234)
@@ -61,14 +73,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attention_resolutions", default="16")
     parser.add_argument("--channel_mult", default="")
     parser.add_argument("--dropout", type=float, default=0.0)
-    parser.add_argument("--use_checkpoint", type=bool, default=False)
-    parser.add_argument("--use_scale_shift_norm", type=bool, default=True)
-    parser.add_argument("--resblock_updown", type=bool, default=False)
-    parser.add_argument("--use_fp16", type=bool, default=False)
+    parser.add_argument("--use_checkpoint", type=str2bool, default=False)
+    parser.add_argument("--use_scale_shift_norm", type=str2bool, default=True)
+    parser.add_argument("--resblock_updown", type=str2bool, default=False)
+    parser.add_argument("--use_fp16", type=str2bool, default=False)
     parser.add_argument("--num_heads", type=int, default=4)
     parser.add_argument("--num_head_channels", type=int, default=-1)
     parser.add_argument("--num_heads_upsample", type=int, default=-1)
-    parser.add_argument("--use_new_attention_order", type=bool, default=False)
+    parser.add_argument("--use_new_attention_order", type=str2bool, default=False)
     return parser.parse_args()
 
 
@@ -101,8 +113,32 @@ def save_clip_npz(
     )
 
 
+def make_step_variance_noise(
+    batch_indices: list[int],
+    frames: int,
+    height: int,
+    width: int,
+    timestep: int,
+    seed: int,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Deterministic DDIM eta noise shared by baseline and candidate.
+
+    This keeps paired comparisons fair across adapter checkpoints and shard
+    layouts when ``ddim_eta > 0``.
+    """
+    chunks = []
+    for global_index in batch_indices:
+        generator = torch.Generator(device=device)
+        step_seed = int(seed) + int(global_index) * 1_000_003 + int(timestep) * 9_176
+        generator.manual_seed(step_seed)
+        chunks.append(torch.randn((frames, 1, height, width), generator=generator, device=device, dtype=dtype))
+    return torch.stack(chunks, dim=0).reshape(len(batch_indices) * frames, 1, height, width)
+
+
 @torch.no_grad()
-def sample_pair(base_model, student, scheduler, conditions, initial_noise, args, device):
+def sample_pair(base_model, student, scheduler, conditions, initial_noise, batch_indices, args, device):
     batch, frames, _, height, width = conditions.shape
     baseline = initial_noise.to(device=device, dtype=conditions.dtype).clone()
     candidate = baseline.clone()
@@ -113,11 +149,40 @@ def sample_pair(base_model, student, scheduler, conditions, initial_noise, args,
         scaled_base = scheduler.scale_model_input(baseline.reshape(batch * frames, 1, height, width), timestep).reshape_as(baseline)
         flat_input = torch.cat([conditions, scaled_base], dim=2).reshape(batch * frames, conditions.shape[2] + 1, height, width)
         eps_base, _ = base_model(flat_input, flat_t)
-        baseline = scheduler.step(eps_base, timestep, baseline.reshape(batch * frames, 1, height, width), eta=args.ddim_eta, use_clipped_model_output=False, return_dict=False)[0].reshape_as(baseline)
+        step_kwargs = {}
+        if args.ddim_eta > 0 and args.deterministic_variance_noise:
+            variance_noise = make_step_variance_noise(
+                batch_indices=batch_indices,
+                frames=frames,
+                height=height,
+                width=width,
+                timestep=int(timestep),
+                seed=args.seed,
+                device=device,
+                dtype=baseline.dtype,
+            )
+            step_kwargs["variance_noise"] = variance_noise
+        baseline = scheduler.step(
+            eps_base,
+            timestep,
+            baseline.reshape(batch * frames, 1, height, width),
+            eta=args.ddim_eta,
+            use_clipped_model_output=False,
+            return_dict=False,
+            **step_kwargs,
+        )[0].reshape_as(baseline)
 
         scaled_candidate = scheduler.scale_model_input(candidate.reshape(batch * frames, 1, height, width), timestep).reshape_as(candidate)
         eps_candidate, _, _ = student(conditions, scaled_candidate, t_clip)
-        candidate = scheduler.step(eps_candidate.reshape(batch * frames, 1, height, width), timestep, candidate.reshape(batch * frames, 1, height, width), eta=args.ddim_eta, use_clipped_model_output=False, return_dict=False)[0].reshape_as(candidate)
+        candidate = scheduler.step(
+            eps_candidate.reshape(batch * frames, 1, height, width),
+            timestep,
+            candidate.reshape(batch * frames, 1, height, width),
+            eta=args.ddim_eta,
+            use_clipped_model_output=False,
+            return_dict=False,
+            **step_kwargs,
+        )[0].reshape_as(candidate)
     return baseline.clamp(0.0, 1.0), candidate.clamp(0.0, 1.0)
 
 
@@ -186,7 +251,7 @@ def main() -> None:
         noise = torch.empty_like(target)
         for noise_item, global_index in enumerate(batch_indices):
             noise[noise_item : noise_item + 1] = make_clip_noise(1, target.shape[1], target.shape[-2], target.shape[-1], seed=args.seed, global_start_index=int(global_index), device=device).to(dtype=target.dtype)
-        baseline, candidate = sample_pair(base_model, student, scheduler, conditions, noise, args, device)
+        baseline, candidate = sample_pair(base_model, student, scheduler, conditions, noise, batch_indices, args, device)
         for b in range(target.shape[0]):
             idx = indices[local_idx * args.batch_size + b]
             gt = target[b]

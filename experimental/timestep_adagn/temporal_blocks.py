@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 import torch
 import torch.nn as nn
 

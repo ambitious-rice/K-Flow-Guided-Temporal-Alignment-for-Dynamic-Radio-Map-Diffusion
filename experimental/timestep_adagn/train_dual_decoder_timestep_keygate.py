@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 import argparse
 import json
 import random
@@ -25,6 +27,15 @@ from utils import build_unet_from_config, cal_pinn
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    def str2bool(value: str | bool) -> bool:
+        if isinstance(value, bool):
+            return value
+        value = value.lower()
+        if value in {"1", "true", "yes", "y", "on"}:
+            return True
+        if value in {"0", "false", "no", "n", "off"}:
+            return False
+        raise argparse.ArgumentTypeError(f"invalid boolean value: {value}")
     parser.add_argument("--data_dir", required=True)
     parser.add_argument("--split_file", default="split.json")
     parser.add_argument("--scene_ids", default="")
@@ -42,14 +53,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attention_resolutions", default="16")
     parser.add_argument("--channel_mult", default="")
     parser.add_argument("--dropout", type=float, default=0.0)
-    parser.add_argument("--use_checkpoint", type=bool, default=False)
-    parser.add_argument("--use_scale_shift_norm", type=bool, default=True)
-    parser.add_argument("--resblock_updown", type=bool, default=False)
-    parser.add_argument("--use_fp16", type=bool, default=False)
+    parser.add_argument("--use_checkpoint", type=str2bool, default=False)
+    parser.add_argument("--use_scale_shift_norm", type=str2bool, default=True)
+    parser.add_argument("--resblock_updown", type=str2bool, default=False)
+    parser.add_argument("--use_fp16", type=str2bool, default=False)
     parser.add_argument("--num_heads", type=int, default=4)
     parser.add_argument("--num_head_channels", type=int, default=-1)
     parser.add_argument("--num_heads_upsample", type=int, default=-1)
-    parser.add_argument("--use_new_attention_order", type=bool, default=False)
+    parser.add_argument("--use_new_attention_order", type=str2bool, default=False)
     parser.add_argument("--init_2d_checkpoint", required=True)
     parser.add_argument("--init_hwm_adapter_checkpoint", default="")
     parser.add_argument("--resume_dual_checkpoint", default="")
@@ -67,7 +78,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base_lr", type=float, default=1e-6)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
     parser.add_argument("--train_base", action="store_true")
-    parser.add_argument("--find_unused_parameters", type=bool, default=True)
+    parser.add_argument("--find_unused_parameters", type=str2bool, default=True)
     parser.add_argument("--mixed_precision", choices=("no", "fp16", "bf16"), default="no")
     parser.add_argument("--max_steps", type=int, default=500)
     parser.add_argument("--gradient_accumulation_steps", type=int, default=4)
@@ -178,7 +189,10 @@ def main() -> None:
         model.hwm_adapter.adapters.load_state_dict(payload["hwm_adapters"], strict=True)
         model.stage2_adapters.load_state_dict(payload["stage2_adapters"], strict=True)
     if args.train_base:
-        adapter_ids = {id(param) for param in model.hwm_adapter.adapters.parameters()} | {id(param) for param in model.stage2_adapters.parameters()}
+        adapter_ids = (
+            {id(param) for param in model.hwm_adapter.adapters.parameters()}
+            | {id(param) for param in model.stage2_adapters.parameters()}
+        )
         adapter_params = [param for param in model.trainable_parameters()]
         base_params = [param for param in model.base_model.parameters() if param.requires_grad and id(param) not in adapter_ids]
         optimizer = torch.optim.AdamW(

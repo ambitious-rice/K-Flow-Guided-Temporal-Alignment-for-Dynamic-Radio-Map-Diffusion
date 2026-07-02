@@ -1,1 +1,2 @@
 checkpoints_dynamic_rmdm_4gpu_no_ckpt_75k/model_phy_step65000.pth filter=lfs diff=lfs merge=lfs -text
+runs/baselines/checkpoints/checkpoints_dynamic_rmdm_4gpu_no_ckpt_75k/model_phy_step65000.pth filter=lfs diff=lfs merge=lfs -text

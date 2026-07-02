@@ -8,6 +8,8 @@ injects the temporally mixed prior back into the diffusion trunk.
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 from typing import Any
 
 import torch

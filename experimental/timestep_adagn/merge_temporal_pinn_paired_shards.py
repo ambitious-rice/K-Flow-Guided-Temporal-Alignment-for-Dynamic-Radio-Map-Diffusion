@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 import argparse
 import csv
 import json
@@ -59,10 +61,12 @@ def main() -> None:
                 raise ValueError(f"Metric columns differ in {csv_path}: {current_metrics} vs {metrics}")
             rows = list(reader)
         for row in rows:
+            clip_index = int(row["clip_index"])
+            global_clip_index = clip_index if clip_index >= offset else offset + clip_index
             parsed = {
-                "global_clip_index": offset + int(row["clip_index"]),
+                "global_clip_index": global_clip_index,
                 "source_shard": str(shard_dir),
-                "clip_index": int(row["clip_index"]),
+                "clip_index": clip_index,
                 "start": int(row["start"]),
             }
             for key in metrics:

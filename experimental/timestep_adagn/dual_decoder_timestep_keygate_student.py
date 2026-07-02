@@ -6,6 +6,8 @@ sample, timestep, and internal features, but not oracle K2/key-path inputs.
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -237,6 +239,10 @@ class DualDecoderTimestepScaleStudent(nn.Module):
 
     @staticmethod
     def _output_block_channels(block: nn.Module) -> int:
+        return DualDecoderTimestepScaleStudent._block_channels(block)
+
+    @staticmethod
+    def _block_channels(block: nn.Module) -> int:
         for module in reversed(block):
             if hasattr(module, "out_channels"):
                 return int(module.out_channels)

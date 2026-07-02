@@ -6,7 +6,7 @@ PY="/data/fzj/conda_envs/RMDM/bin/python"
 DATA="/data/fzj/CARLA_0.9.15/datasets/DynamicRadioMap/MultiScene20_RF300M8Runs_RadioMapSeerPack_ShadowDenoiseV1"
 SPLIT_FILE="${DATA}/split.json"
 CKPT="${ROOT}/checkpoints_dynamic_rmdm_4gpu_no_ckpt_75k/model_phy_step65000.pth"
-OUT_ROOT="${ROOT}/experiments/rmdm_temporal_fullsplit_eval_ddim20_paired_primary"
+OUT_ROOT="${ROOT}/experiments/rmdm_temporal_fullsplit_eval_ddim20_paired_smooth003"
 LOG_ROOT="${OUT_ROOT}/logs"
 
 mkdir -p "${LOG_ROOT}"
@@ -20,7 +20,7 @@ run_eval() {
   local out_dir="${OUT_ROOT}/paired_${split}_${start_index}_${end_index}"
   local log_file="${LOG_ROOT}/paired_${split}_${start_index}_${end_index}.log"
 
-  echo "[$(date '+%F %T')] start paired ${split} ${start_index}:${end_index} on GPU${gpu}"
+  echo "[$(date '+%F %T')] start paired smooth003 ${split} ${start_index}:${end_index} on GPU${gpu}"
   CUDA_VISIBLE_DEVICES="${gpu}" "${PY}" sample_temporal_pinn_paired.py \
     --data_dir "${DATA}" \
     --split_file "${SPLIT_FILE}" \
@@ -40,12 +40,12 @@ run_eval() {
     --device cuda \
     --flush_every 5 \
     --resume_existing \
-    --temporal_smoothing_weight 0.05 \
+    --temporal_smoothing_weight 0.03 \
     --temporal_smoothing_every 1 \
     --temporal_smoothing_mask_mode inverse_rss_grad \
     --temporal_smoothing_rss_grad_threshold 0.09 \
     --temporal_smoothing_mask_dilate 3 2>&1 | tee -a "${log_file}"
-  echo "[$(date '+%F %T')] done paired ${split} ${start_index}:${end_index} on GPU${gpu}"
+  echo "[$(date '+%F %T')] done paired smooth003 ${split} ${start_index}:${end_index} on GPU${gpu}"
 }
 
 case "${1:-}" in
@@ -57,16 +57,22 @@ case "${1:-}" in
     run_eval 3 val 3375 6750
     run_eval 3 test 3375 6750
     ;;
+  gpu0_test1)
+    run_eval 0 test 3375 6750
+    ;;
+  gpu1_test0)
+    run_eval 1 test 0 3375
+    ;;
   merge)
-    "${PY}" merge_temporal_pinn_paired_shards.py \
+    "${PY}" experimental/timestep_adagn/merge_temporal_pinn_paired_shards.py \
       --output_dir "${OUT_ROOT}/paired_val_merged" \
       --shard_dirs "${OUT_ROOT}/paired_val_0_3375" "${OUT_ROOT}/paired_val_3375_6750"
-    "${PY}" merge_temporal_pinn_paired_shards.py \
+    "${PY}" experimental/timestep_adagn/merge_temporal_pinn_paired_shards.py \
       --output_dir "${OUT_ROOT}/paired_test_merged" \
       --shard_dirs "${OUT_ROOT}/paired_test_0_3375" "${OUT_ROOT}/paired_test_3375_6750"
     ;;
   *)
-    echo "Usage: $0 gpu2|gpu3|merge" >&2
+    echo "Usage: $0 gpu2|gpu3|gpu0_test1|gpu1_test0|merge" >&2
     exit 2
     ;;
 esac

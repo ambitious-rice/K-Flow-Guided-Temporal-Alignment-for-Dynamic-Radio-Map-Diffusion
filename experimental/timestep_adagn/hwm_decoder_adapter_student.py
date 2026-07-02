@@ -7,6 +7,8 @@ adapters after selected decoder/localization blocks near the prior output.
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 import torch
 from torch import nn
 import torch.nn.functional as F

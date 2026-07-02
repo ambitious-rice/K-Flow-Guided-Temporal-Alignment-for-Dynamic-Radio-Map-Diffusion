@@ -158,15 +158,18 @@ class CheckpointFunction(th.autograd.Function):
         with th.enable_grad():
             shallow_copies = [x.view_as(x) for x in ctx.input_tensors]
             output_tensors = ctx.run_function(*shallow_copies)
-        input_grads = th.autograd.grad(
+        grad_targets = ctx.input_tensors + ctx.input_params
+        active_targets = [x for x in grad_targets if x.requires_grad]
+        active_grads = th.autograd.grad(
             output_tensors,
-            ctx.input_tensors + ctx.input_params,
+            active_targets,
             output_grads,
             allow_unused=True,
         )
+        grad_iter = iter(active_grads)
+        input_grads = tuple(next(grad_iter) if x.requires_grad else None for x in grad_targets)
         del ctx.input_tensors
         del ctx.input_params
         del output_tensors
         return (None, None) + input_grads
-
 

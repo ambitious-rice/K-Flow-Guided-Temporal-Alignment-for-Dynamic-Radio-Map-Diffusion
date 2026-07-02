@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 from dataclasses import dataclass
-import os
-import sys
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from lib.kflow_loss import compute_kflow, spatial_gradients_centered
-
-_UTILS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "utils")
-if _UTILS_DIR not in sys.path:
-    sys.path.append(_UTILS_DIR)
-from nn import timestep_embedding
+from utils.nn import timestep_embedding
 
 
 class ResidualCorrectionHead(nn.Module):

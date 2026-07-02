@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import _paths  # noqa: F401
+
 import argparse
 import csv
 import json
