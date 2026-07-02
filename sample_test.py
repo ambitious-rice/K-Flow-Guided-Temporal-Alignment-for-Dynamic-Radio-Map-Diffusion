@@ -29,9 +29,26 @@ from lib import loaders as radio_loaders
 # Data loading functions
 # ============================================================================
 
-def build_dataloader(data_name: str, data_dir: str, image_size: int, 
-                    batch_size: int, workers: int, phase: str = "test") -> Tuple[DataLoader, int, int]:
+def build_dataloader(data_name: str, data_dir: str, image_size: int,
+                    batch_size: int, workers: int, phase: str = "test",
+                    split_file: str = "split.json", frame_stride: int = 1,
+                    cache_size: int = 8, tx_heatmap_sigma_px: float = 1.5) -> Tuple[DataLoader, int, int]:
     """Build data loader"""
+    if data_name == 'DynamicRadio':
+        if int(image_size) != 128:
+            raise ValueError("DynamicRadio data is 128x128; please run with --image_size 128")
+        ds = radio_loaders.DynamicRadioMapRMDM(
+            root=data_dir,
+            split=phase,
+            split_file=split_file,
+            frame_stride=frame_stride,
+            cache_size=cache_size,
+            tx_heatmap_sigma_px=tx_heatmap_sigma_px,
+        )
+        dl = DataLoader(ds, batch_size=batch_size, shuffle=False,
+                       num_workers=workers, pin_memory=True)
+        return dl, 3, 1
+
     dataset_configs = {
         'Radio': {
             'loader': lambda: radio_loaders.RadioUNet_c(phase=phase, dir_dataset=data_dir),
@@ -399,12 +416,16 @@ def save_images(generated: torch.Tensor, ground_truth: torch.Tensor, conditions:
         plt.savefig(os.path.join(gt_dir, f'{base_name}_ground_truth.png'), dpi=150, bbox_inches='tight')
         plt.close()
         
-        # Save conditions (buildings and transmitters)
+        # Save conditions.
         if conditions.shape[1] >= 2:
             buildings = conditions[i, 0].detach().cpu().numpy()
             tx = conditions[i, 1].detach().cpu().numpy()
-            
-            fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+            has_traffic = conditions.shape[1] >= 3
+            if has_traffic:
+                traffic = conditions[i, 2].detach().cpu().numpy()
+                fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+            else:
+                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
             
             im1 = axes[0].imshow(buildings, cmap='gray')
             axes[0].set_title(f'Buildings - {base_name}')
@@ -415,6 +436,12 @@ def save_images(generated: torch.Tensor, ground_truth: torch.Tensor, conditions:
             axes[1].set_title(f'Transmitters - {base_name}')
             axes[1].axis('off')
             plt.colorbar(im2, ax=axes[1])
+
+            if has_traffic:
+                im3 = axes[2].imshow(traffic, cmap='magma')
+                axes[2].set_title(f'Traffic - {base_name}')
+                axes[2].axis('off')
+                plt.colorbar(im3, ax=axes[2])
             
             plt.tight_layout()
             plt.savefig(os.path.join(cond_dir, f'{base_name}_conditions.png'), dpi=150, bbox_inches='tight')
@@ -544,8 +571,8 @@ def parse_args() -> argparse.Namespace:
     # Basic arguments
     parser.add_argument('--scheduler_type', type=str, default='ddim', 
                        choices=['ddpm', 'ddim', 'dpm'], help='Scheduler type')
-    parser.add_argument('--data_name', type=str, default='Radio', 
-                       choices=['Radio', 'Radio_2', 'Radio_3'], help='Dataset name')
+    parser.add_argument('--data_name', type=str, default='Radio',
+                       choices=['Radio', 'Radio_2', 'Radio_3', 'DynamicRadio'], help='Dataset name')
     parser.add_argument('--data_dir', type=str, required=True, 
                        help='RadioMapSeer dataset root directory')
     parser.add_argument('--checkpoint_path', type=str, required=True, 
@@ -570,6 +597,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--workers', type=int, default=4, help='Data loading worker processes')
     parser.add_argument('--num_samples', type=int, default=-1, 
                        help='Number of test samples, <=0 means full test set')
+    parser.add_argument('--split_file', type=str, default='split.json', help='DynamicRadio split file name')
+    parser.add_argument('--frame_stride', type=int, default=1, help='DynamicRadio frame subsampling stride')
+    parser.add_argument('--cache_size', type=int, default=8, help='DynamicRadio in-process array cache size')
+    parser.add_argument('--tx_heatmap_sigma_px', type=float, default=1.5, help='DynamicRadio Tx heatmap sigma in pixels')
     
     # Model arguments
     parser.add_argument('--num_channels', type=int, default=96, help='UNet base channels')
@@ -609,8 +640,12 @@ def main():
     # Build data loader
     print("Building data loader...")
     dl, in_ch, out_ch = build_dataloader(
-        args.data_name, args.data_dir, args.image_size, 
-        args.batch_size, args.workers, phase="test"
+        args.data_name, args.data_dir, args.image_size,
+        args.batch_size, args.workers, phase="test",
+        split_file=args.split_file,
+        frame_stride=args.frame_stride,
+        cache_size=args.cache_size,
+        tx_heatmap_sigma_px=args.tx_heatmap_sigma_px,
     )
     
     # Build model

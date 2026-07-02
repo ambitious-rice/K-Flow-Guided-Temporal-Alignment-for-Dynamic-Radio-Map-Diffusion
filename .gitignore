@@ -96,6 +96,8 @@ Thumbs.db
 # Data files
 *.csv
 *.json
+!configs/
+!configs/**/*.json
 *.xml
 *.parquet
 *.feather
@@ -112,6 +114,12 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Experiment artifacts and local training outputs
+checkpoints*/
+eval_*/
+experiments/
+visualizations*/
 
 # Temporary files
 tmp/

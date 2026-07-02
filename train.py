@@ -16,7 +16,17 @@ from utils import build_unet_from_config, cal_pinn
 from lib import loaders as radio_loaders
 
 
-def build_dataloader(data_name, data_dir, image_size, batch_size, workers):
+def build_dataloader(
+    data_name,
+    data_dir,
+    image_size,
+    batch_size,
+    workers,
+    split_file="split.json",
+    frame_stride=1,
+    cache_size=8,
+    tx_heatmap_sigma_px=1.5,
+):
     if data_name == 'Radio':
         ds = radio_loaders.RadioUNet_c(phase="train", dir_dataset=data_dir)
         in_ch = 2  # [buildings, Tx] input channels
@@ -29,8 +39,21 @@ def build_dataloader(data_name, data_dir, image_size, batch_size, workers):
         ds = radio_loaders.RadioUNet_s(phase="train", simulation="rand", cityMap="missing", missing=4, dir_dataset=data_dir)
         in_ch = 3  # [buildings, Tx, samples] input channels
         out_ch = 1  # target output channels
+    elif data_name == 'DynamicRadio':
+        if int(image_size) != 128:
+            raise ValueError("DynamicRadio data is 128x128; please run with --image_size 128")
+        ds = radio_loaders.DynamicRadioMapRMDM(
+            root=data_dir,
+            split="train",
+            split_file=split_file,
+            frame_stride=frame_stride,
+            cache_size=cache_size,
+            tx_heatmap_sigma_px=tx_heatmap_sigma_px,
+        )
+        in_ch = 3  # [buildings, Tx heatmap, traffic] input channels
+        out_ch = 1  # target output channels
     else:
-        raise ValueError("data_name must be 'Radio' | 'Radio_2' | 'Radio_3'")
+        raise ValueError("data_name must be 'Radio' | 'Radio_2' | 'Radio_3' | 'DynamicRadio'")
     dl = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True, drop_last=True)
     return dl, in_ch, out_ch
 
@@ -38,11 +61,15 @@ def build_dataloader(data_name, data_dir, image_size, batch_size, workers):
 def parse_args():
     parser = argparse.ArgumentParser()
     # Data arguments
-    parser.add_argument('--data_name', type=str, default='Radio', choices=['Radio','Radio_2','Radio_3'])
+    parser.add_argument('--data_name', type=str, default='Radio', choices=['Radio','Radio_2','Radio_3','DynamicRadio'])
     parser.add_argument('--data_dir', type=str, required=True, help='RadioMapSeer root directory, e.g., /path/to/RadioMapSeer/')
     parser.add_argument('--image_size', type=int, default=256)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--workers', type=int, default=8)
+    parser.add_argument('--split_file', type=str, default='split.json', help='DynamicRadio split file name')
+    parser.add_argument('--frame_stride', type=int, default=1, help='DynamicRadio frame subsampling stride')
+    parser.add_argument('--cache_size', type=int, default=8, help='DynamicRadio in-process array cache size')
+    parser.add_argument('--tx_heatmap_sigma_px', type=float, default=1.5, help='DynamicRadio Tx heatmap sigma in pixels')
     # Model arguments
     parser.add_argument('--num_channels', type=int, default=128)
     parser.add_argument('--num_res_blocks', type=int, default=2)
@@ -78,7 +105,17 @@ def main():
     accelerator = Accelerator(mixed_precision=args.mixed_precision, kwargs_handlers=[ddp_kwargs])
     device = accelerator.device
 
-    dl, in_ch, out_ch = build_dataloader(args.data_name, args.data_dir, args.image_size, args.batch_size, args.workers)
+    dl, in_ch, out_ch = build_dataloader(
+        args.data_name,
+        args.data_dir,
+        args.image_size,
+        args.batch_size,
+        args.workers,
+        split_file=args.split_file,
+        frame_stride=args.frame_stride,
+        cache_size=args.cache_size,
+        tx_heatmap_sigma_px=args.tx_heatmap_sigma_px,
+    )
 
     # Build UNet configuration - input: conditions + noisy target, output: denoised result
     cfg = {
@@ -222,5 +259,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 

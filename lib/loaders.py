@@ -1,5 +1,9 @@
 from __future__ import print_function, division
 import os
+import json
+import math
+from collections import OrderedDict
+from pathlib import Path
 import torch
 import pandas as pd
 from skimage import io, transform
@@ -7,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils, datasets, models
+from PIL import Image
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -18,6 +23,186 @@ warnings.filterwarnings("ignore")
                  #dir_buildings="png/", 
                  #dir_antenna= , 
                     
+
+class DynamicRadioMapRMDM(Dataset):
+    """DynamicRadioMap reader for RMDM pixel-space conditional diffusion.
+
+    Output is aligned with the existing RMDM training loop:
+    - inputs: [building_mask, tx_heatmap, traffic_frame], each in [0, 1]
+    - image_gain: dynamic RSS frame in [0, 1]
+    - name: stable sample identifier
+    """
+
+    def __init__(
+        self,
+        root,
+        split="train",
+        split_file="split.json",
+        frame_stride=1,
+        cache_size=8,
+        tx_heatmap_sigma_px=1.5,
+    ):
+        self.root = Path(root).expanduser().resolve()
+        self.split = split
+        self.split_file = split_file
+        self.frame_stride = max(1, int(frame_stride))
+        self.cache_size = max(0, int(cache_size))
+        self.tx_heatmap_sigma_px = float(tx_heatmap_sigma_px)
+        self._cache = OrderedDict()
+
+        self.dataset_meta = self._load_json_if_exists(self.root / "dataset_meta.json")
+        self.scene_meta_by_id = {
+            str(scene.get("scene_id")): scene
+            for scene in self.dataset_meta.get("scenes", [])
+            if scene.get("scene_id") is not None
+        }
+        self.split_meta = self._load_json(self.root / split_file)
+        self.records = self._build_records(self._split_samples(split))
+        self.frame_index = self._build_frame_index()
+
+    def __len__(self):
+        return len(self.frame_index)
+
+    def __getitem__(self, idx):
+        record_idx, frame_idx = self.frame_index[int(idx)]
+        record = self.records[record_idx]
+
+        image_gain = self._read_png_gray(record["rss_png_dir"] / f"frame_{frame_idx:06d}.png")
+        image_gain = torch.from_numpy(image_gain.astype(np.float32) / 255.0).unsqueeze(0).contiguous()
+
+        building = np.asarray(self._load_npz_array(record["building_mask_path"], "building_mask"), dtype=np.float32)
+        if building.max(initial=0.0) > 1.0:
+            building = building / 255.0
+
+        tx_heatmap = self._make_tx_heatmap(record, sigma_px=self.tx_heatmap_sigma_px)
+        traffic = np.asarray(self._load_npz_array(record["traffic_grid_path"], "traffic_grid_uint8")[frame_idx], dtype=np.float32)
+        traffic = traffic / 255.0
+
+        inputs = np.stack([building, tx_heatmap, traffic], axis=0)
+        inputs = torch.from_numpy(inputs.astype(np.float32)).contiguous()
+
+        name = f"{record['scene_id']}/{record['episode_id']}/{record['tx_id']}/frame_{frame_idx:06d}.png"
+        return inputs, image_gain, name
+
+    def _split_samples(self, split):
+        samples = self.split_meta.get("samples", {}).get(split)
+        if samples is None:
+            raise KeyError(f"Split {split!r} not found in {self.root / self.split_file}")
+        return [str(path) for path in samples]
+
+    def _build_records(self, sample_paths):
+        records = []
+        for rel_path in sample_paths:
+            sample_meta_path = self.root / rel_path
+            tx_dir = sample_meta_path.parent
+            episode_dir = tx_dir.parent
+            scene_dir = episode_dir.parent.parent
+            records.append({
+                "scene_id": scene_dir.name,
+                "episode_id": episode_dir.name,
+                "tx_id": tx_dir.name,
+                "sample_meta_path": sample_meta_path,
+                "tx_dir": tx_dir,
+                "episode_dir": episode_dir,
+                "scene_dir": scene_dir,
+                "rss_png_dir": tx_dir / "png",
+                "building_mask_path": scene_dir / "building" / "building_mask.npz",
+                "traffic_grid_path": episode_dir / "traffic" / "traffic_grid_uint8.npz",
+                "frame_indices_path": episode_dir / "frame_indices.npy",
+                "scene_meta_path": scene_dir / "scene_meta.json",
+            })
+        return records
+
+    def _build_frame_index(self):
+        frame_count = int(self.split_meta.get("frame_count_per_tx_sample", 0) or 0)
+        frame_index = []
+        for record_idx, record in enumerate(self.records):
+            if frame_count > 0:
+                frame_ids = list(range(frame_count))
+            else:
+                frame_ids = [int(value) for value in np.load(record["frame_indices_path"]).tolist()]
+            for frame_id in frame_ids[:: self.frame_stride]:
+                frame_index.append((record_idx, int(frame_id)))
+        return frame_index
+
+    def _load_json(self, path):
+        with Path(path).open("r", encoding="utf-8") as file:
+            return json.load(file)
+
+    def _load_json_if_exists(self, path):
+        path = Path(path)
+        return self._load_json(path) if path.exists() else {}
+
+    def _cache_get(self, kind, path):
+        key = (kind, str(path))
+        if key not in self._cache:
+            return None
+        value = self._cache.pop(key)
+        self._cache[key] = value
+        return value
+
+    def _cache_put(self, kind, path, value):
+        if self.cache_size <= 0:
+            return value
+        key = (kind, str(path))
+        self._cache[key] = value
+        while len(self._cache) > self.cache_size:
+            self._cache.popitem(last=False)
+        return value
+
+    def _load_npz_array(self, path, key):
+        cached = self._cache_get(f"npz:{key}", path)
+        if cached is not None:
+            return cached
+        with np.load(path) as data:
+            array = np.asarray(data[key])
+        return self._cache_put(f"npz:{key}", path, array)
+
+    def _read_png_gray(self, path):
+        with Image.open(path) as image:
+            return np.asarray(image.convert("L"), dtype=np.uint8)
+
+    def _scene_meta(self, record):
+        scene_meta = self.scene_meta_by_id.get(record["scene_id"])
+        if scene_meta is not None:
+            return scene_meta
+        scene_meta = self._load_json(record["scene_meta_path"])
+        self.scene_meta_by_id[record["scene_id"]] = scene_meta
+        return scene_meta
+
+    def _make_tx_heatmap(self, record, sigma_px=1.5):
+        scene_meta = self._scene_meta(record)
+        sample_meta = self._load_json(record["sample_meta_path"])
+        tx_position = sample_meta.get("tx_position")
+        if tx_position is None:
+            raise KeyError(f"tx_position not found in {record['sample_meta_path']}")
+
+        support = scene_meta["support_region"]
+        region = scene_meta.get("valid_crop") or support
+        center = region.get("center", support["center"])
+        width_m = float(region.get("width_m", scene_meta.get("valid_size_m", {}).get("width_m")))
+        height_m = float(region.get("height_m", scene_meta.get("valid_size_m", {}).get("height_m")))
+        yaw = math.radians(float(region.get("yaw_deg", support.get("yaw_deg", 0.0))))
+        resolution = scene_meta.get("resolution_hw") or scene_meta.get("resolution") or [128, 128]
+        height, width = int(resolution[0]), int(resolution[1])
+
+        dx = float(tx_position[0]) - float(center["x"])
+        dy = float(tx_position[1]) - float(center["y"])
+        cos_yaw = math.cos(-yaw)
+        sin_yaw = math.sin(-yaw)
+        local_x = cos_yaw * dx - sin_yaw * dy
+        local_y = sin_yaw * dx + cos_yaw * dy
+
+        cell_size_x = width_m / float(width)
+        cell_size_y = height_m / float(height)
+        col = local_x / cell_size_x + width / 2.0 - 0.5
+        row = local_y / cell_size_y + height / 2.0 - 0.5
+
+        yy, xx = np.mgrid[0:height, 0:width]
+        sigma = max(float(sigma_px), 1e-6)
+        heatmap = np.exp(-((xx - col) ** 2 + (yy - row) ** 2) / (2.0 * sigma ** 2))
+        return np.asarray(np.clip(heatmap, 0.0, 1.0), dtype=np.float32)
+
 
 class RadioUNet_c(Dataset):
     """RadioMapSeer Loader for accurate buildings and no measurements (RadioUNet_c)"""
@@ -831,9 +1016,7 @@ class RadioUNet_s_sprseIRT4(Dataset):
     
     
 
-    
 
-    
-    
-    
-    
+
+
+

@@ -145,6 +145,24 @@ python train.py \
   --save_dir ./checkpoints_phy
 ```
 
+**DynamicRadioMap Training (ShadowDenoiseV1)**:
+```bash
+python train.py \
+  --data_name DynamicRadio \
+  --data_dir /data/fzj/CARLA_0.9.15/datasets/DynamicRadioMap/MultiScene20_RF300M8Runs_RadioMapSeerPack_ShadowDenoiseV1 \
+  --image_size 128 \
+  --batch_size 32 \
+  --workers 4 \
+  --num_channels 96 \
+  --attention_resolutions 16 \
+  --diffusion_steps 1000 \
+  --noise_schedule linear \
+  --lr 1e-4 \
+  --max_steps 100000 \
+  --save_interval 5000 \
+  --save_dir ./checkpoints_dynamic_rmdm
+```
+
 ### 🔮 Inference & Evaluation
 
 **Quick Inference Test (SRM)**:
@@ -190,6 +208,21 @@ This will generate:
 - 🏗️ **Input conditions**: `conditions/` folder (buildings + transmitters)
 - 🔍 **Comparison plots**: `comparison/` folder (generated vs. ground truth vs. difference)
 
+**DynamicRadioMap Evaluation**:
+```bash
+python sample_test.py \
+  --scheduler_type ddim \
+  --data_name DynamicRadio \
+  --data_dir /data/fzj/CARLA_0.9.15/datasets/DynamicRadioMap/MultiScene20_RF300M8Runs_RadioMapSeerPack_ShadowDenoiseV1 \
+  --checkpoint_path ./checkpoints_dynamic_rmdm/model_phy_step100000.pth \
+  --output_dir ./eval_dynamic_rmdm \
+  --image_size 128 \
+  --batch_size 8 \
+  --ddim_steps 50 \
+  --num_samples 1000 \
+  --save_images
+```
+
 ## 📜 Academic Citation
 
 ```bibtex
@@ -216,4 +249,3 @@ Special thanks to:
 ---
 
 **License**: This project is distributed under the **Academic Free License v3.0**. Please cite accordingly for academic use. For commercial applications, contact the authors directly.
-
