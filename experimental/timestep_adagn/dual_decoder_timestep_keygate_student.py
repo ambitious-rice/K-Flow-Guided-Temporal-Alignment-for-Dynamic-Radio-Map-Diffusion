@@ -1,7 +1,8 @@
-"""Timestep-conditioned dual decoder temporal adapters for frozen RMDM.
+"""Timestep-conditioned dual decoder temporal adapters with key-region gates.
 
 This is the deployable no-K2 branch: adapters may use the condition, noisy
 sample, timestep, and internal features, but not oracle K2/key-path inputs.
+K2 is only used outside this module as a training-time gate supervision target.
 """
 
 from __future__ import annotations
@@ -36,12 +37,16 @@ class TimestepAdaGNSeparable3DAdapter(nn.Module):
         diffusion_steps: int = 1000,
         time_embed_dim: int = 128,
         time_hidden: int = 128,
+        use_key_region_gate: bool = False,
+        gate_hidden: int = 32,
+        gate_init_bias: float = 0.0,
     ):
         super().__init__()
         channels = int(channels)
         hidden = max(int(min_hidden), channels // max(int(reduction), 1))
         self.diffusion_steps = int(diffusion_steps)
         self.time_embed_dim = int(time_embed_dim)
+        self.use_key_region_gate = bool(use_key_region_gate)
         self.norm = nn.GroupNorm(_group_count(channels), channels)
         self.time_mlp = nn.Sequential(
             nn.Linear(self.time_embed_dim, int(time_hidden)),
@@ -52,6 +57,18 @@ class TimestepAdaGNSeparable3DAdapter(nn.Module):
         self.temporal = nn.Conv3d(hidden, hidden, kernel_size=(3, 1, 1), padding=(1, 0, 0))
         self.spatial = nn.Conv3d(hidden, hidden, kernel_size=(1, 3, 3), padding=(0, 1, 1))
         self.up = nn.Conv3d(hidden, channels, kernel_size=1)
+        if self.use_key_region_gate:
+            gate_hidden = max(1, int(gate_hidden))
+            self.gate_net = nn.Sequential(
+                nn.GroupNorm(_group_count(channels), channels),
+                nn.Conv3d(channels, gate_hidden, kernel_size=1),
+                nn.SiLU(),
+                nn.Conv3d(gate_hidden, 1, kernel_size=1),
+            )
+            nn.init.zeros_(self.gate_net[-1].weight)
+            nn.init.constant_(self.gate_net[-1].bias, float(gate_init_bias))
+        else:
+            self.gate_net = None
         nn.init.zeros_(self.time_mlp[-1].weight)
         nn.init.zeros_(self.time_mlp[-1].bias)
         nn.init.zeros_(self.up.weight)
@@ -78,7 +95,7 @@ class TimestepAdaGNSeparable3DAdapter(nn.Module):
         batch: int,
         frames: int,
         timesteps: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor | None]:
         if x.ndim != 4:
             raise ValueError(f"expected [B*F,C,H,W], got {tuple(x.shape)}")
         _, channels, height, width = x.shape
@@ -89,10 +106,14 @@ class TimestepAdaGNSeparable3DAdapter(nn.Module):
         y = F.silu(self.temporal(F.silu(y)))
         y = F.silu(self.spatial(y))
         delta = self.up(y)
+        gate_logits = None
+        if self.gate_net is not None:
+            gate_logits = self.gate_net(seq)
+            delta = torch.sigmoid(gate_logits) * delta
         out = seq + delta
         out = out.permute(0, 2, 1, 3, 4).reshape(batch * frames, channels, height, width).contiguous()
         mod_mean = 0.5 * (scale.detach().abs().mean() + shift.detach().abs().mean())
-        return out, delta.detach().abs().mean(), mod_mean
+        return out, delta.detach().abs().mean(), mod_mean, gate_logits
 
 
 class HWMDecoderTimestepAdaGNAdapter(HWMDecoderAdapterStudent):
@@ -153,7 +174,7 @@ class HWMDecoderTimestepAdaGNAdapter(HWMDecoderAdapterStudent):
                 x = torch.cat((x, skip), dim=1)
                 x = hwm.conv_blocks_localization[u](x)
             if u in self.adapter_indices:
-                x, delta, mod_mean = self.adapters[str(u)](x, batch, frames, timesteps)
+                x, delta, mod_mean, _ = self.adapters[str(u)](x, batch, frames, timesteps)
                 adapter_has_run = True
                 stats[f"adapter_delta_{u}"] = delta
                 mod_stats[f"adapter_mod_{u}"] = mod_mean
@@ -194,6 +215,9 @@ class DualDecoderTimestepScaleStudent(nn.Module):
         time_embed_dim: int = 128,
         detach_anchor_gate: bool = False,
         train_base: bool = False,
+        use_key_region_gate: bool = False,
+        gate_hidden: int = 32,
+        gate_init_bias: float = 0.0,
     ):
         super().__init__()
         self.base_model = base_model
@@ -225,7 +249,11 @@ class DualDecoderTimestepScaleStudent(nn.Module):
                 diffusion_steps=diffusion_steps,
                 time_embed_dim=time_embed_dim,
                 time_hidden=alpha_hidden,
+                use_key_region_gate=use_key_region_gate,
+                gate_hidden=gate_hidden,
+                gate_init_bias=gate_init_bias,
             )
+        self.use_key_region_gate = bool(use_key_region_gate)
         self.detach_anchor_gate = bool(detach_anchor_gate)
         self.train_base = bool(train_base)
         for param in self.base_model.parameters():
@@ -300,15 +328,22 @@ class DualDecoderTimestepScaleStudent(nn.Module):
         h = model.middle_block(h, emb)
         stage2_deltas = []
         stage2_mods = []
+        stage2_gate_logits = []
+        stage2_gate_means = []
         for idx, module in enumerate(model.output_blocks):
             h = torch.cat([h, hs.pop()], dim=1)
             h = module(h, emb)
             if idx in self.stage2_adapter_indices:
-                h, delta, mod_mean = self.stage2_adapters[str(idx)](h, batch, frames, timesteps)
+                h, delta, mod_mean, gate_logits = self.stage2_adapters[str(idx)](h, batch, frames, timesteps)
                 stage2_deltas.append(delta)
                 stage2_mods.append(mod_mean)
+                if gate_logits is not None:
+                    stage2_gate_logits.append(gate_logits)
+                    stage2_gate_means.append(torch.sigmoid(gate_logits.detach()).mean())
         eps = model.out(h.type(flat_input.dtype)).reshape(batch, frames, 1, height, width).contiguous()
         stats = dict(hwm_stats)
         stats["stage2_adapter_delta_mean"] = torch.stack(stage2_deltas).mean() if stage2_deltas else eps.new_tensor(0.0)
         stats["stage2_adapter_mod_mean"] = torch.stack(stage2_mods).mean() if stage2_mods else eps.new_tensor(0.0)
+        stats["stage2_gate_logits"] = stage2_gate_logits
+        stats["stage2_gate_mean"] = torch.stack(stage2_gate_means).mean() if stage2_gate_means else eps.new_tensor(0.0)
         return eps, cal, stats
