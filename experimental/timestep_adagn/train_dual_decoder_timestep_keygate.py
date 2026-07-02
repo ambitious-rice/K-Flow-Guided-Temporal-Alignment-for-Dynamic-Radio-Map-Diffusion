@@ -18,7 +18,7 @@ from accelerate.utils import DistributedDataParallelKwargs, set_seed
 from diffusers import DDPMScheduler
 from torch.utils.data import DataLoader
 
-from dual_decoder_timestep_scale_student import DualDecoderTimestepScaleStudent
+from dual_decoder_timestep_keygate_student import DualDecoderTimestepScaleStudent
 from lib.dynamic_clip_loaders import DynamicRadioMapRMDMClip
 from residual_kflow_student import KPathDeltaConfig, kpath_delta_target_loss, predict_x0_from_eps
 from train_temporal_pinn import build_model_config, preprocess_conditions
@@ -70,6 +70,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--adapter_min_hidden", type=int, default=16)
     parser.add_argument("--alpha_hidden", type=int, default=128, help="hidden dim for the timestep AdaGN MLP")
     parser.add_argument("--time_embed_dim", type=int, default=128)
+    parser.add_argument("--use_key_region_gate", type=str2bool, default=True)
+    parser.add_argument("--gate_hidden", type=int, default=32)
+    parser.add_argument("--gate_init_bias", type=float, default=0.0)
+    parser.add_argument("--gate_loss_weight", type=float, default=0.02)
+    parser.add_argument("--gate_k2_quantile", type=float, default=0.70)
+    parser.add_argument("--gate_dice_weight", type=float, default=1.0)
+    parser.add_argument("--gate_positive_eps", type=float, default=1e-6)
     parser.add_argument("--diffusion_steps", type=int, default=1000)
     parser.add_argument("--noise_schedule", choices=("linear", "cosine"), default="linear")
     parser.add_argument("--low_timestep_prob", type=float, default=0.7)
@@ -110,6 +117,63 @@ def _seed_worker(worker_id: int, base_seed: int) -> None:
     random.seed(worker_seed)
     np.random.seed(worker_seed % (2**32))
     torch.manual_seed(worker_seed)
+
+
+def make_key_region_mask(k2: torch.Tensor, quantile: float = 0.70, positive_eps: float = 1e-6) -> torch.Tensor:
+    """Build a binary key-region target from positive K2 values only.
+
+    K2 is used only as supervision here. The model forward path never receives
+    this mask or the K2 tensor.
+    """
+    if k2.ndim != 5:
+        raise ValueError(f"k2 must be [B,F,C,H,W], got {tuple(k2.shape)}")
+    k2_one = k2[:, :, :1].float()
+    masks = []
+    for item in k2_one:
+        positive = item[item > float(positive_eps)]
+        if positive.numel() == 0:
+            masks.append(torch.zeros_like(item))
+            continue
+        threshold = torch.quantile(positive, float(quantile))
+        masks.append((item >= threshold).to(dtype=k2_one.dtype))
+    return torch.stack(masks, dim=0)
+
+
+def key_region_gate_loss(
+    gate_logits: list[torch.Tensor],
+    k2: torch.Tensor,
+    quantile: float,
+    dice_weight: float,
+    positive_eps: float,
+) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    if not gate_logits:
+        zero = k2.new_tensor(0.0)
+        return zero, {"gate_bce": zero, "gate_dice": zero, "gate_target_mean": zero}
+    target = make_key_region_mask(k2, quantile=quantile, positive_eps=positive_eps)
+    target = target.permute(0, 2, 1, 3, 4).contiguous()
+    losses = []
+    bces = []
+    dices = []
+    target_means = []
+    for logits in gate_logits:
+        resized = F.interpolate(target, size=logits.shape[-3:], mode="trilinear", align_corners=False)
+        resized = resized.to(dtype=logits.dtype, device=logits.device)
+        bce = F.binary_cross_entropy_with_logits(logits, resized)
+        pred = torch.sigmoid(logits)
+        dims = tuple(range(1, pred.ndim))
+        intersection = (pred * resized).sum(dim=dims)
+        denom = pred.sum(dim=dims) + resized.sum(dim=dims)
+        dice = 1.0 - ((2.0 * intersection + 1.0) / (denom + 1.0)).mean()
+        losses.append(bce + float(dice_weight) * dice)
+        bces.append(bce.detach())
+        dices.append(dice.detach())
+        target_means.append(resized.detach().mean())
+    loss = torch.stack(losses).mean()
+    return loss, {
+        "gate_bce": torch.stack(bces).mean(),
+        "gate_dice": torch.stack(dices).mean(),
+        "gate_target_mean": torch.stack(target_means).mean(),
+    }
 
 
 def save_checkpoint(model: DualDecoderTimestepScaleStudent, args: argparse.Namespace, step: int, path: Path) -> None:
@@ -179,6 +243,9 @@ def main() -> None:
         time_embed_dim=args.time_embed_dim,
         detach_anchor_gate=False,
         train_base=args.train_base,
+        use_key_region_gate=args.use_key_region_gate,
+        gate_hidden=args.gate_hidden,
+        gate_init_bias=args.gate_init_bias,
     )
     if args.init_hwm_adapter_checkpoint:
         model.load_hwm_adapter_checkpoint(args.init_hwm_adapter_checkpoint)
@@ -272,6 +339,21 @@ def main() -> None:
                         "pred_dynamic": target.new_tensor(0.0),
                         "gt_dynamic": target.new_tensor(0.0),
                     }
+                if args.gate_loss_weight > 0:
+                    loss_gate, gate_stats = key_region_gate_loss(
+                        stats.get("stage2_gate_logits", []),
+                        k2,
+                        quantile=args.gate_k2_quantile,
+                        dice_weight=args.gate_dice_weight,
+                        positive_eps=args.gate_positive_eps,
+                    )
+                else:
+                    loss_gate = target.new_tensor(0.0)
+                    gate_stats = {
+                        "gate_bce": target.new_tensor(0.0),
+                        "gate_dice": target.new_tensor(0.0),
+                        "gate_target_mean": target.new_tensor(0.0),
+                    }
                 loss = (
                     args.diff_loss_weight * loss_diff
                     + args.x0_recon_weight * loss_x0
@@ -279,6 +361,7 @@ def main() -> None:
                     + args.stage1_pinn_weight * loss_pinn
                     + args.stage1_kpath_weight * loss_stage1_kpd
                     + args.final_kpath_weight * loss_final_kpd
+                    + args.gate_loss_weight * loss_gate
                 )
                 accelerator.backward(loss)
                 optimizer.step()
@@ -294,6 +377,9 @@ def main() -> None:
                         f"s1_pred {s1_stats['pred_dynamic'].item():.6f} s1_gt {s1_stats['gt_dynamic'].item():.6f} "
                         f"fkpd {loss_final_kpd.item():.6f} f_dyn {f_stats['dynamic_loss'].item():.6f} "
                         f"f_pred {f_stats['pred_dynamic'].item():.6f} f_gt {f_stats['gt_dynamic'].item():.6f} "
+                        f"gate {loss_gate.item():.6f} gbce {gate_stats['gate_bce'].item():.6f} "
+                        f"gdice {gate_stats['gate_dice'].item():.6f} gmean {stats['stage2_gate_mean'].detach().item():.6f} "
+                        f"gtar {gate_stats['gate_target_mean'].item():.6f} "
                         f"hwm_delta {stats['adapter_delta_mean'].detach().item():.9f} "
                         f"hwm_mod {stats['adapter_mod_mean'].detach().item():.9f} "
                         f"s2_delta {stats['stage2_adapter_delta_mean'].detach().item():.9f} "
