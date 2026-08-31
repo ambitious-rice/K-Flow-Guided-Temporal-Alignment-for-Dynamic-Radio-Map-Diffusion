@@ -80,7 +80,7 @@ Do not assume that `conda activate` works in a detached shell. The Conda name re
 
 ## Execution modes and persistent state
 
-Use foreground execution only for a short, observed diagnostic. For significant or potentially disconnected work, create the output directory and start a detached session (for example, `tmux`) with a unique run ID/session name. Redirect stdout and stderr to the task log, then verify that the process actually started by checking the session, PID, initial log output, and GPU use when applicable.
+Use the persistent local operator session only for a short, observed diagnostic and for launching/checking work. For significant or potentially disconnected work, create the output directory and start a detached **remote job** tmux session with a unique run ID/session name. This keeps the operator terminal responsive and allows multiple jobs to run concurrently without additional gateway logins. Redirect stdout and stderr to the task log, then verify that the process actually started by checking the session, PID, initial log output, and GPU use when applicable.
 
 ```bash
 mkdir -p "<output-dir>"
@@ -94,6 +94,8 @@ tail -n 40 "<log>"
 The shell quoting above is schematic: construct the final command so `<workdir>`, `<python>`, script arguments, and `<log>` are resolved before starting the session. Never report a task as started merely because `tmux new-session` returned success.
 
 Persist only durable, reproducing facts in `.agents/runs/<run-id>.yaml`: goal; source commit/branch/dirty state; server/workdir; full command; environment ID/name/Python; session/PID/log/timestamps; status; artifact locations; key result; and next action. Do not record transient shell mistakes or routine diagnostics.
+
+Record the remote job session name, not the local `rmdm-gateway-<server>` operator session. The latter is an expendable connection aid and can be recycled without affecting a run.
 
 ## Completion and artifact handling
 

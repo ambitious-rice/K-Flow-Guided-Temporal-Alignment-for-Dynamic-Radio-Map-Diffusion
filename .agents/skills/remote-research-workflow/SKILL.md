@@ -7,6 +7,8 @@ description: "Manage this project's local-led research workflow: configure a rem
 
 Use this skill for the project's local-development and remote-execution workflow. `AGENTS.md` is the governing project policy; read it and `.agents/config.yaml` before remote work.
 
+For repeated interactive work on a configured GateShell target, use `scripts/remote_session.py` to maintain one local tmux-backed operator session per server. It preserves the already-authenticated gateway and backend terminal; it is distinct from the remote tmux sessions that own long-running jobs.
+
 ## Core boundaries
 
 - Develop, validate, manage Git, retain experiment state, and analyze results locally.
@@ -28,7 +30,7 @@ Support two entry modes:
 
 ## References
 
-- For remote connection, identity checks, and the no-forwarding boundary, read [references/remote-connection.md](references/remote-connection.md).
+- For remote connection, identity checks, persistent operator sessions, and the no-forwarding boundary, read [references/remote-connection.md](references/remote-connection.md).
 - For local initialization, GitHub synchronization, remote code deployment, and LFS handling, read [references/code-sync.md](references/code-sync.md).
 - For task deployment decisions, named-environment selection, detached execution, state updates, and verified RMDM examples, read [references/task-deployment.md](references/task-deployment.md).
 - For cloud-storage login or transfers of datasets, models, checkpoints, or results, read [references/artifact-sync.md](references/artifact-sync.md).
