@@ -39,6 +39,11 @@ def main() -> None:
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--subset-stage", choices=["stage_a", "stage_b_extra"], required=True)
     parser.add_argument("--videos-per-scene", type=int, required=True)
+    parser.add_argument(
+        "--starts",
+        default="0,16,32,48,64,80",
+        help="Comma-separated W16 window starts; defaults to the formal six-window protocol.",
+    )
     parser.add_argument("--rates", required=True)
     parser.add_argument("--noise-stds", required=True)
     parser.add_argument("--ddim-steps", type=int, required=True)
@@ -70,7 +75,10 @@ def main() -> None:
     videos = balanced_manifest_videos(
         args.manifest, args.subset_stage, args.videos_per_scene
     )
-    loader = make_loader(accelerator, config, videos, [0, 16, 32, 48, 64, 80])
+    starts = _ints(args.starts)
+    if not starts or any(start < 0 for start in starts):
+        raise ValueError("starts must contain non-negative window offsets")
+    loader = make_loader(accelerator, config, videos, starts)
     model = build_w16_system(config)
     payload = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     if payload.get("schema") not in {CHECKPOINT_SCHEMA, CANDIDATE_SCHEMA}:
