@@ -40,7 +40,6 @@ from rmdm_hvdit_v4_x0_w16_ratebalanced.inverse_sampling import add_observation_n
 from rmdm_hvdit_v4_joint.config import ExperimentConfig, load_config
 from rmdm_hvdit_v4_joint.evaluation.evaluator import manifest_video_ids
 from rmdm_hvdit_v4_joint.evaluation.legacy_rmdm import LegacyRMDMT1ProtocolAdapter
-from rmdm_hvdit_v4_joint.provenance import sha256_file
 from rmdm_hvdit_v4_joint.training.engine import write_json_atomic
 from train_sparse_dynamic_rmdm import build_model_config
 from utils import build_unet_from_config
@@ -363,7 +362,6 @@ def _evaluate(
         "split": split,
         "subset_stage": subset_stage,
         "manifest": str(manifest_path),
-        "manifest_sha256": sha256_file(manifest_path),
         "video_ids": video_ids,
         "video_count": len(video_ids),
         "window_count": len(dataset),
@@ -479,10 +477,9 @@ def main() -> None:
     )
     result["checkpoint"] = {
         "path": str(checkpoint_path),
-        "sha256": sha256_file(checkpoint_path),
         **checkpoint_metadata,
     }
-    result["config"] = {"path": str(config_path), "sha256": sha256_file(config_path)}
+    result["config"] = {"path": str(config_path)}
     result["visible_physical_gpus"] = expected_gpus
 
     accelerator.wait_for_everyone()

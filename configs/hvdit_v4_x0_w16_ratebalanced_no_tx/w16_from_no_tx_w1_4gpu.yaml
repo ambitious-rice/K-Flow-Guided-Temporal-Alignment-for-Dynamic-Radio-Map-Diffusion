@@ -150,7 +150,6 @@ rate_balance:
 
 initialization:
   source_t1_checkpoint: runs/rmdm_hvdit_v4_x0_no_tx_continue/t1_from10k_to50k/checkpoints/best.pth
-  source_t1_sha256: REPLACE_AFTER_W1_SELECTION
   source_t1_step: -1
   w16_artifact: runs/rmdm_hvdit_v4_x0_w16_ratebalanced_no_tx/w16_init/from_no_tx_x0_w1_best.pth
 
