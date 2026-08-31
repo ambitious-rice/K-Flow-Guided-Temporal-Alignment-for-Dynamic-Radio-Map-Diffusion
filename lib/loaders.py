@@ -2,6 +2,8 @@ from __future__ import print_function, division
 import os
 import json
 import math
+import hashlib
+from bisect import bisect_right
 from collections import OrderedDict
 from pathlib import Path
 import torch
@@ -56,39 +58,74 @@ class DynamicRadioMapRMDM(Dataset):
             for scene in self.dataset_meta.get("scenes", [])
             if scene.get("scene_id") is not None
         }
-        self.split_meta = self._load_json(self.root / split_file)
+        split_path = Path(split_file).expanduser()
+        self.split_path = split_path if split_path.is_absolute() else self.root / split_path
+        self.split_meta = self._load_json(self.split_path)
         self.records = self._build_records(self._split_samples(split))
-        self.frame_index = self._build_frame_index()
+        self.frame_ids_by_record, self.frame_offsets = self._build_frame_index()
 
     def __len__(self):
-        return len(self.frame_index)
+        return int(self.frame_offsets[-1])
 
     def __getitem__(self, idx):
-        record_idx, frame_idx = self.frame_index[int(idx)]
+        record, frame_idx, building, tx_heatmap, traffic, image_gain = self._get_frame_arrays(idx)
+        inputs = np.stack([building, tx_heatmap, traffic], axis=0)
+        inputs = torch.from_numpy(inputs.astype(np.float32)).contiguous()
+        name = f"{record['scene_id']}/{record['episode_id']}/{record['tx_id']}/frame_{frame_idx:06d}.png"
+        return inputs, torch.from_numpy(image_gain).unsqueeze(0).contiguous(), name
+
+    def _get_frame_arrays(self, idx):
+        """Read a frame and its static/dynamic conditions as float32 numpy arrays."""
+        record_idx, frame_idx = self._resolve_frame_index(idx)
         record = self.records[record_idx]
 
-        image_gain = self._read_png_gray(record["rss_png_dir"] / f"frame_{frame_idx:06d}.png")
-        image_gain = torch.from_numpy(image_gain.astype(np.float32) / 255.0).unsqueeze(0).contiguous()
-
+        image_gain = self._read_png_gray(record["rss_png_dir"] / f"frame_{frame_idx:06d}.png").astype(np.float32) / 255.0
         building = np.asarray(self._load_npz_array(record["building_mask_path"], "building_mask"), dtype=np.float32)
         if building.max(initial=0.0) > 1.0:
             building = building / 255.0
-
         tx_heatmap = self._make_tx_heatmap(record, sigma_px=self.tx_heatmap_sigma_px)
-        traffic = np.asarray(self._load_npz_array(record["traffic_grid_path"], "traffic_grid_uint8")[frame_idx], dtype=np.float32)
-        traffic = traffic / 255.0
+        traffic = np.asarray(
+            self._load_npz_array(record["traffic_grid_path"], "traffic_grid_uint8")[frame_idx],
+            dtype=np.float32,
+        )
+        if traffic.max(initial=0.0) > 1.0:
+            traffic = traffic / 255.0
+        return record, frame_idx, building, tx_heatmap, traffic, image_gain
 
-        inputs = np.stack([building, tx_heatmap, traffic], axis=0)
-        inputs = torch.from_numpy(inputs.astype(np.float32)).contiguous()
-
-        name = f"{record['scene_id']}/{record['episode_id']}/{record['tx_id']}/frame_{frame_idx:06d}.png"
-        return inputs, image_gain, name
+    def _resolve_frame_index(self, idx):
+        idx = int(idx)
+        if idx < 0:
+            idx += len(self)
+        if idx < 0 or idx >= len(self):
+            raise IndexError(idx)
+        record_idx = bisect_right(self.frame_offsets, idx) - 1
+        frame_offset = idx - self.frame_offsets[record_idx]
+        return record_idx, self.frame_ids_by_record[record_idx][frame_offset]
 
     def _split_samples(self, split):
         samples = self.split_meta.get("samples", {}).get(split)
-        if samples is None:
-            raise KeyError(f"Split {split!r} not found in {self.root / self.split_file}")
-        return [str(path) for path in samples]
+        if samples is not None:
+            return [str(path) for path in samples]
+
+        # The new dataset deliberately keeps its official scene-level policy in
+        # a separate config file. Resolve that policy against index.json instead
+        # of falling back to the packaged default split, which has a different
+        # scene assignment.
+        scene_ids = self.split_meta.get(split)
+        if isinstance(scene_ids, list) and all(isinstance(item, str) for item in scene_ids):
+            index_meta = self._load_json(self.root / "index.json")
+            indexed_samples = index_meta.get("samples", [])
+            sample_paths = [
+                str(item["sample_meta"])
+                for item in indexed_samples
+                if item.get("scene_id") in set(scene_ids)
+            ]
+            if not sample_paths:
+                raise ValueError(
+                    f"Official scene split {self.split_path} selected no samples from {self.root / 'index.json'}"
+                )
+            return sample_paths
+        raise KeyError(f"Split {split!r} not found in {self.split_path}")
 
     def _build_records(self, sample_paths):
         records = []
@@ -115,15 +152,22 @@ class DynamicRadioMapRMDM(Dataset):
 
     def _build_frame_index(self):
         frame_count = int(self.split_meta.get("frame_count_per_tx_sample", 0) or 0)
-        frame_index = []
+        if frame_count <= 0 and self.records:
+            # The supplied dynamic dataset has a fixed 100-frame contract. A
+            # single read avoids loading frame_indices.npy once for every Tx
+            # during worker construction.
+            frame_count = int(np.load(self.records[0]["frame_indices_path"]).shape[0])
+        frame_ids_by_record = []
+        frame_offsets = [0]
         for record_idx, record in enumerate(self.records):
             if frame_count > 0:
                 frame_ids = list(range(frame_count))
             else:
                 frame_ids = [int(value) for value in np.load(record["frame_indices_path"]).tolist()]
-            for frame_id in frame_ids[:: self.frame_stride]:
-                frame_index.append((record_idx, int(frame_id)))
-        return frame_index
+            frame_ids = frame_ids[:: self.frame_stride]
+            frame_ids_by_record.append(frame_ids)
+            frame_offsets.append(frame_offsets[-1] + len(frame_ids))
+        return frame_ids_by_record, frame_offsets
 
     def _load_json(self, path):
         with Path(path).open("r", encoding="utf-8") as file:
@@ -172,8 +216,11 @@ class DynamicRadioMapRMDM(Dataset):
 
     def _make_tx_heatmap(self, record, sigma_px=1.5):
         scene_meta = self._scene_meta(record)
-        sample_meta = self._load_json(record["sample_meta_path"])
-        tx_position = sample_meta.get("tx_position")
+        tx_position = record.get("tx_position")
+        if tx_position is None:
+            sample_meta = self._load_json(record["sample_meta_path"])
+            tx_position = sample_meta.get("tx_position")
+            record["tx_position"] = tx_position
         if tx_position is None:
             raise KeyError(f"tx_position not found in {record['sample_meta_path']}")
 
@@ -202,6 +249,101 @@ class DynamicRadioMapRMDM(Dataset):
         sigma = max(float(sigma_px), 1e-6)
         heatmap = np.exp(-((xx - col) ** 2 + (yy - row) ** 2) / (2.0 * sigma ** 2))
         return np.asarray(np.clip(heatmap, 0.0, 1.0), dtype=np.float32)
+
+
+class DynamicSparseRadioMapRMDM(DynamicRadioMapRMDM):
+    """Dynamic single-frame sparse-observation reader for the RMDM baseline.
+
+    Conditions are ``[building, tx_heatmap, vehicle, sparse_rss, sample_mask]``.
+    The packed ``traffic_grid_uint8`` is a semantic map in this dataset:
+    code 2 denotes a vehicle, while code 1 is static context already covered
+    by the separate building map.  Vehicle code 2 is decoded into a binary
+    mask before use.  Buildings and vehicles are excluded from ``valid_mask``
+    before sampling. ``sampling_mode='train'`` draws a fresh rate and spatial
+    mask on every access; deterministic mode reproduces a fixed val/test
+    manifest from its documented seed and sampler version.
+    """
+
+    SAMPLER_VERSION = "dynamic_sparse_v2_semantic_vehicle_blake2b_pcg64_without_replacement"
+
+    def __init__(
+        self,
+        *args,
+        sampling_mode="train",
+        sample_rates=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+        sampling_rate=None,
+        manifest_seed=20260714,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        if sampling_mode not in {"train", "deterministic"}:
+            raise ValueError("sampling_mode must be 'train' or 'deterministic'")
+        parsed_rates = tuple(int(rate) for rate in sample_rates)
+        if not parsed_rates or any(rate < 1 or rate > 100 for rate in parsed_rates):
+            raise ValueError("sample_rates must contain integer percentages in [1, 100]")
+        if sampling_mode == "deterministic" and sampling_rate is None:
+            raise ValueError("deterministic sampling requires sampling_rate")
+        self.sampling_mode = sampling_mode
+        self.sample_rates = parsed_rates
+        self.sampling_rate = int(sampling_rate) if sampling_rate is not None else None
+        self.manifest_seed = int(manifest_seed)
+        self._rng = None
+        self._rng_worker_seed = None
+
+    def __getitem__(self, idx):
+        record, frame_idx, building, tx_heatmap, traffic, image_gain = self._get_frame_arrays(idx)
+        # ``traffic`` was normalized by the parent reader.  In the supplied
+        # uint8 semantic grid, codes 0/1/2 become 0, 1/255 and 2/255; only
+        # code 2 is a dynamic vehicle.  The midpoint threshold preserves this
+        # exact decoding without treating the static code 1 as a vehicle.
+        vehicle_mask = (traffic > (1.5 / 255.0)).astype(np.float32)
+        valid_mask = np.logical_and(building <= 0.5, vehicle_mask <= 0.5)
+        valid_flat = np.flatnonzero(valid_mask.reshape(-1))
+        if valid_flat.size == 0:
+            raise RuntimeError(f"No valid free-space pixel in {record['scene_id']}/{record['episode_id']}")
+
+        name = f"{record['scene_id']}/{record['episode_id']}/{record['tx_id']}/frame_{frame_idx:06d}.png"
+        rate = self._choose_sampling_rate()
+        selected = self._sample_flat_indices(valid_flat, name=name, rate=rate)
+        observed_mask = np.zeros_like(valid_mask, dtype=np.float32)
+        observed_mask.reshape(-1)[selected] = 1.0
+        sparse_rss = observed_mask * image_gain
+        conditions = np.stack([building, tx_heatmap, vehicle_mask, sparse_rss, observed_mask], axis=0)
+
+        return {
+            "inputs": torch.from_numpy(conditions.astype(np.float32)).contiguous(),
+            "target": torch.from_numpy(image_gain.astype(np.float32)).unsqueeze(0).contiguous(),
+            "valid_mask": torch.from_numpy(valid_mask.astype(np.float32)).unsqueeze(0).contiguous(),
+            "observed_mask": torch.from_numpy(observed_mask).unsqueeze(0).contiguous(),
+            "sample_rate": torch.tensor(rate, dtype=torch.int16),
+            "name": name,
+        }
+
+    def _choose_sampling_rate(self):
+        if self.sampling_mode == "deterministic":
+            return self.sampling_rate
+        return int(self._train_rng().choice(self.sample_rates))
+
+    def _sample_flat_indices(self, valid_flat, *, name, rate):
+        count = max(1, int(round((float(rate) / 100.0) * valid_flat.size)))
+        if self.sampling_mode == "deterministic":
+            digest = hashlib.blake2b(
+                f"{self.SAMPLER_VERSION}|{self.manifest_seed}|{self.split}|{name}|{rate}".encode("utf-8"),
+                digest_size=16,
+            ).digest()
+            rng = np.random.default_rng(int.from_bytes(digest, byteorder="little", signed=False))
+        else:
+            rng = self._train_rng()
+        return rng.choice(valid_flat, size=count, replace=False)
+
+    def _train_rng(self):
+        worker_info = torch.utils.data.get_worker_info()
+        worker_seed = int(worker_info.seed) if worker_info is not None else int(torch.initial_seed())
+        worker_seed += self.manifest_seed
+        if self._rng is None or self._rng_worker_seed != worker_seed:
+            self._rng = np.random.default_rng(worker_seed)
+            self._rng_worker_seed = worker_seed
+        return self._rng
 
 
 class RadioUNet_c(Dataset):
@@ -1015,8 +1157,6 @@ class RadioUNet_s_sprseIRT4(Dataset):
         return [inputs, image_gain, sparse_samples]
     
     
-
-
 
 
 

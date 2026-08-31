@@ -1,0 +1,160 @@
+data:
+  root: /data/fzj/CARLA_0.9.15/datasets/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
+  split_file: /data/fzj/CARLA_0.9.15/configs/dynamic_radio/multi20_formal_scene_split.json
+  image_size: 128
+  frames_per_video: 100
+  cache_size: 8
+  workers: 8
+  tx_heatmap_sigma_px: 1.5
+
+sampling:
+  seed: 20260717
+  homogeneous_probability: 1.0
+  base_rates: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  base_probabilities: [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10]
+  deltas: [-2, -1, 0, 1, 2]
+  delta_probabilities: [0.10, 0.20, 0.40, 0.20, 0.10]
+  extreme_probability_given_heterogeneous: 0.0
+  extreme_frame_counts: [1, 2]
+  extreme_frame_count_probabilities: [0.80, 0.20]
+  extreme_rates: [0.1, 0.2, 0.5]
+  extreme_rate_probabilities: [0.20, 0.30, 0.50]
+
+stage1:
+  base_features: 32
+  trainable: true
+  chunk_size: 16
+  pinn_k: 0.2
+  pinn_weight: 1.0
+
+model:
+  use_explicit_tx_condition: false
+  spatial_patch_size: 4
+  temporal_patch_size: 2
+  local_dim: 384
+  global_dim: 768
+  head_dim: 64
+  local_depth: 2
+  global_depth: 11
+  local_kernel: [3, 7, 7]
+  feedforward_multiplier: 3
+  mapping_depth: 1
+  mapping_width: 768
+  mapping_feedforward_multiplier: 3
+  dropout: 0.0
+  gradient_checkpointing: true
+  local_attention_backend: natten
+  rope_axis_dims: [16, 24, 24]
+  decoder_token_channels: 192
+  decoder_stage_channels: [128, 64]
+  decoder_blocks_per_stage: 1
+  expected_trainable_parameters_min: 126000000
+  expected_trainable_parameters_max: 140000000
+
+diffusion:
+  train_timesteps: 1000
+  beta_schedule: linear
+  prediction_type: sample
+  ddim_steps: 20
+
+t1_train:
+  seed: 20260717
+  max_steps: 80000
+  per_gpu_batch_size: 32
+  gradient_accumulation_steps: 2
+  effective_global_batch_size: 256
+  learning_rate: 0.0005
+  betas: [0.9, 0.95]
+  epsilon: 0.00000001
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  mixed_precision: bf16
+  gradient_checkpointing: false
+  warmup_steps: 2000
+  lr_schedule_steps: 50000
+  min_learning_rate: 0.00005
+  validation_first_step: 10000
+  validation_every_steps: 5000
+  early_stop_min_step: 25000
+  patience_validations: 2
+  log_every_steps: 20
+  checkpoint_every_steps: 1000
+  resume_from: ""
+
+w16_train:
+  seed: 20260717
+  epochs: 200
+  updates_per_epoch: 328
+  max_steps: 65600
+  effective_global_batch_size: 32
+  microbatch_candidates: [1, 2, 4]
+  default_per_gpu_batch_size: 4
+  default_gradient_accumulation_steps: 2
+  learning_rate: 0.0001
+  betas: [0.9, 0.95]
+  epsilon: 0.00000001
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  mixed_precision: bf16
+  warmup_epochs: 2.0
+  min_learning_rate: 0.00001
+  validation_first_epoch: 10
+  validation_every_epochs: 10
+  early_stop_min_epoch: 100
+  patience_validations: 5
+  stage_b_top_k: 3
+  log_every_steps: 20
+  resume_from: ""
+
+evaluation:
+  subset_manifest: manifests/dynamic_sparse_v2_semantic_vehicle/val_subset_v1.json
+  formal_test_manifest: manifests/dynamic_sparse_v2_semantic_vehicle/motivation_test_subset_v1.json
+  factorized_baseline_run_dir: runs/rmdm_joint_w16_unified_large120m_b8_uniform_base_p1_p10_no_extreme
+  sf_mask_manifest: manifests/dynamic_sparse_v2_semantic_vehicle/sparse_masks_val.json
+  sf_reference_checkpoint: runs/rmdm_sf_sparse_v2_fullimage_obstacle_e1trial/epoch_009.pth
+  sf_reference_per_gpu_batch_size: 16
+  rates: [1.0, 2.0, 3.0, 5.0, 8.0, 10.0]
+  formal_test_rates: [1.0, 2.0, 3.0, 5.0, 8.0, 10.0]
+  ddim_steps: 20
+  t1_all_frame_starts: true
+  w16_starts: [0, 16, 32, 48, 64, 80]
+  full100_extra_start: 84
+  t1_reference_summary: runs/rmdm_sf_sparse_v2_fullimage_obstacle_e1trial/epochwise_validation/stage_a/epoch_009/summary_val.json
+  t1_reference_tolerance: 0.05
+  require_monotonic_observation_response: true
+  require_ablation_improvement_each_rate: true
+  t1_evaluation_batch_size: 4
+  w16_evaluation_batch_size: 1
+
+pipeline:
+  output_root: runs/rmdm_hvdit_v4_x0_w16_ratebalanced_no_tx
+  environment_path: /data/fzj/conda_envs/RMDM_HVDIT_V2
+  allowed_physical_gpus: [0, 1, 2, 3]
+  allow_gpu_co_tenancy: false
+  wait_for_gpus: true
+  gpu_poll_seconds: 60
+  free_memory_mib: 22000
+  consecutive_free_polls: 1
+  lock_file: runs/rmdm_hvdit_v4_x0_w16_ratebalanced_no_tx/.pipeline.lock
+  default_through: w16_validation
+
+rate_balance:
+  rates: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+  ema_decay: 0.99
+  inverse_power: 0.5
+  min_weight: 0.5
+  max_weight: 2.0
+  min_samples_per_rate: 64
+  warmup_epochs: 1
+  balance_x0: true
+
+initialization:
+  source_t1_checkpoint: runs/rmdm_hvdit_v4_x0_no_tx_continue/t1_from10k_to50k/checkpoints/best.pth
+  source_t1_sha256: REPLACE_AFTER_W1_SELECTION
+  source_t1_step: -1
+  w16_artifact: runs/rmdm_hvdit_v4_x0_w16_ratebalanced_no_tx/w16_init/from_no_tx_x0_w1_best.pth
+
+smoke:
+  per_gpu_batch_size: 4
+  optimizer_steps: 2
+  output: runs/rmdm_hvdit_v4_x0_w16_ratebalanced_no_tx/smoke/ddp_b4_acc2_2step.json
