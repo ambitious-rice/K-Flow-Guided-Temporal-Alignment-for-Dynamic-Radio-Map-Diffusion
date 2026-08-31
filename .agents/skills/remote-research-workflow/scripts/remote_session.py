@@ -9,6 +9,7 @@ jobs must use their own remote tmux sessions and project run records.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import time
@@ -21,14 +22,24 @@ except ImportError as exc:  # pragma: no cover - depends on the invoking machine
     raise SystemExit("remote_session.py requires PyYAML (python3-yaml).") from exc
 
 
-ROOT = Path(__file__).resolve().parents[4]
-CONFIG_PATH = ROOT / ".agents" / "config.yaml"
 PREFIX = "rmdm-gateway-"
 PASSWORD_PROMPT = re.compile(r"(?:password|密码)\s*:", re.IGNORECASE)
 
 
 def fail(message: str) -> None:
     raise SystemExit(f"error: {message}")
+
+
+def find_project_root() -> Path:
+    """Find the RMDM checkout from the caller's working directory or override."""
+    start = Path(os.environ.get("RMDM_PROJECT_ROOT", Path.cwd())).resolve()
+    for candidate in (start, *start.parents):
+        if (candidate / "AGENTS.md").is_file() and (candidate / ".agents" / "config.yaml").is_file():
+            return candidate
+    fail("cannot locate an RMDM checkout; run from it or set RMDM_PROJECT_ROOT")
+
+
+CONFIG_PATH = find_project_root() / ".agents" / "config.yaml"
 
 
 def command(*args: str, stdin: str | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
