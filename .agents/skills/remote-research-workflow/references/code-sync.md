@@ -12,6 +12,13 @@ remote:
   servers:
     zjlab:
       project_root: /data/fzj/RMDM
+      environments:
+        default: rmdm_hvdit_v2
+        items:
+          rmdm_hvdit_v2:
+            manager: conda
+            conda_name: RMDM_HVDIT_V2
+            python: /data/fzj/conda_envs/RMDM_HVDIT_V2/bin/python
 
 git:
   repository: https://github.com/ambitious-rice/K-Flow-Guided-Temporal-Alignment-for-Dynamic-Radio-Map-Diffusion.git
@@ -20,6 +27,8 @@ git:
 ```
 
 `repository` is the GitHub HTTPS address used locally and remotely. `branch` is the source branch to verify and deploy. `remote_name` is normally `origin`. `local_root` and `project_root` are distinct and must not be inferred from the current shell directory.
+
+`remote.servers.<server>.environments` is a per-server registry, so one project can use multiple isolated Conda environments. A task selects an ID from `items`; `default` is only a fallback when the task has no specific environment requirement. Each entry must state its manager, Conda environment name, and the exact Python executable verified on that server. Prefer the configured Python path in non-interactive task commands instead of relying on shell activation. Add an environment only after checking it remotely; never guess a path or copy an environment definition between unlike servers.
 
 ## First-time local setup
 

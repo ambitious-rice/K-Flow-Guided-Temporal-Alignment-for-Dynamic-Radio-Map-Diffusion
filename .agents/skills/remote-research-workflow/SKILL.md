@@ -17,7 +17,9 @@ Use this skill for the project's local-development and remote-execution workflow
 
 ## Configuration
 
-`config.yaml` stores stable project facts: local and remote roots, connection data, repository and branch, resource roots, artifact roots, and the external-storage mapping. It may contain connection credentials at the user's direction. Keep it local-only, mode `600`, and excluded from Git; never reveal credentials in a command line, log, commentary, or final response.
+`config.yaml` stores stable project facts: local and remote roots, connection data, repository and branch, named per-server execution environments, resource roots, artifact roots, and the external-storage mapping. It may contain connection credentials at the user's direction. Keep it local-only, mode `600`, and excluded from Git; never reveal credentials in a command line, log, commentary, or final response.
+
+Select a task environment by its configured ID. Do not assume that one Conda environment fits every task or server; use the configured Python executable for non-interactive execution and verify a new environment before adding it to the registry.
 
 Support two entry modes:
 
@@ -28,6 +30,7 @@ Support two entry modes:
 
 - For remote connection, identity checks, and the no-forwarding boundary, read [references/remote-connection.md](references/remote-connection.md).
 - For local initialization, GitHub synchronization, remote code deployment, and LFS handling, read [references/code-sync.md](references/code-sync.md).
+- For task deployment decisions, named-environment selection, detached execution, state updates, and verified RMDM examples, read [references/task-deployment.md](references/task-deployment.md).
 - For cloud-storage login or transfers of datasets, models, checkpoints, or results, read [references/artifact-sync.md](references/artifact-sync.md).
 
 Keep environment, dataset, model, execution, and result-transfer procedures grounded in verified project configuration and exercised workflows.
