@@ -112,8 +112,12 @@ def install_sampling_rate_conditioning(system: nn.Module, *, freeze_backbone: bo
         rate = sparse_batch.get("sampling_rate")
         if not torch.is_tensor(rate):
             raise KeyError("sparse batch misses tensor sampling_rate")
-        if rate.shape != (cache["condition_high"].shape[0],):
+        batch_size = cache["condition_high"].shape[0]
+        # SamplingPolicy preserves the time axis, so W1 supplies [B, 1].  Keep
+        # the model interface scalar per video by collapsing that singleton.
+        if rate.numel() != batch_size:
             raise ValueError("sampling_rate must contain one value per W1 sample")
+        rate = rate.reshape(batch_size)
         cache["sampling_rate"] = rate.to(device=cache["condition_high"].device)
         return cache
 
