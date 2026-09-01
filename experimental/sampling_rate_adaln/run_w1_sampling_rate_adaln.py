@@ -91,9 +91,6 @@ def main() -> None:
     source_checkpoint = Path(args.source_checkpoint).resolve()
     source_manifest = Path(args.manifest).resolve()
     output = Path(args.output_dir).resolve()
-    if output.exists():
-        raise FileExistsError(f"refusing to overwrite existing output: {output}")
-    output.mkdir(parents=True)
     config = load_config(config_path)
     train = config.t1_train
     accelerator = make_accelerator(
@@ -104,6 +101,13 @@ def main() -> None:
     expected_processes = len(config.pipeline.allowed_physical_gpus)
     if accelerator.num_processes != expected_processes:
         raise RuntimeError(f"expected {expected_processes} processes, got {accelerator.num_processes}")
+    # Only rank zero owns output-directory creation.  All ranks then observe the
+    # same path instead of racing and treating the first mkdir as an overwrite.
+    if accelerator.is_main_process:
+        if output.exists():
+            raise FileExistsError(f"refusing to overwrite existing output: {output}")
+        output.mkdir(parents=True)
+    accelerator.wait_for_everyone()
     seed_everything(train.seed)
 
     model = build_t1_system(config)
