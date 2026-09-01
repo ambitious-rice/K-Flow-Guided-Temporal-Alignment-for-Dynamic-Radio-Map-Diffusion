@@ -1,0 +1,26 @@
+# W1 validation branch: the loader supplies all unchanged V4 defaults.
+diffusion:
+  train_timesteps: 1000
+  beta_schedule: linear
+  prediction_type: sample
+  ddim_steps: 20
+
+model:
+  use_explicit_tx_condition: false
+
+t1_train:
+  seed: 20260717
+  per_gpu_batch_size: 32
+  gradient_accumulation_steps: 2
+  effective_global_batch_size: 256
+  mixed_precision: bf16
+  gradient_checkpointing: false
+  betas: [0.9, 0.95]
+  epsilon: 0.00000001
+  gradient_clip_norm: 1.0
+
+pipeline:
+  allowed_physical_gpus: [0, 1, 2, 3]
+  allow_gpu_co_tenancy: false
+  wait_for_gpus: false
+  free_memory_mib: 13000

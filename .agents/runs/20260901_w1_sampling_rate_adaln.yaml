@@ -1,0 +1,34 @@
+id: 20260901_w1_sampling_rate_adaln
+
+goal: >-
+  Test whether a continuous observed sampling-rate input, added to W1's shared
+  AdaLN-style residual modulation, improves held-out sparse Radio Map recovery.
+
+source:
+  commit: pending_local_commit
+  branch: main
+  dirty: true
+  dirty_note: Existing AGENTS.md and docs/过去阶段实验分析/ changes belong to the user and are excluded.
+
+remote:
+  host: zjlab
+  workdir: /data/fzj/RMDM_observation_sensitivity_20260901
+  legacy_runtime_root: /data/fzj/RMDM
+
+execution:
+  environment: rmdm_hvdit_v2 (RMDM_HVDIT_V2)
+  gpus: [0, 1, 2, 3]
+  status: pending_preflight
+
+status: preparing
+
+artifacts:
+  remote: /data/fzj/RMDM_observation_sensitivity_20260901/runs/w1_sampling_rate_adaln_20260901
+  local: /data_p6/fzj/projects/RMDM/results/w1_sampling_rate_adaln_20260901
+
+notes:
+  - W1 legacy source is untracked on the remote runtime and is read-only.
+  - The local adapter is zero-initialized and freezes all inherited W1/HWM parameters.
+  - Training is limited to the new continuous-rate branch; baseline and candidate use identical three-scene held-out masks, DDIM noise, rates, and DDIM-20.
+
+next_action: Run a four-GPU import/one-step smoke test, then launch the bounded 3,000-step job if it passes.
