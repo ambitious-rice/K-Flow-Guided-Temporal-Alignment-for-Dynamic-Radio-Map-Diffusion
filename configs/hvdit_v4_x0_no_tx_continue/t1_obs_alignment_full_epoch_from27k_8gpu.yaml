@@ -1,0 +1,44 @@
+diffusion:
+  train_timesteps: 1000
+  beta_schedule: linear
+  prediction_type: sample
+  ddim_steps: 20
+
+model:
+  use_explicit_tx_condition: false
+
+t1_train:
+  seed: 20260717
+  max_steps: 33000
+  per_gpu_batch_size: 16
+  gradient_accumulation_steps: 2
+  effective_global_batch_size: 256
+  learning_rate: 0.0005
+  betas: [0.9, 0.95]
+  epsilon: 0.00000001
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  mixed_precision: bf16
+  gradient_checkpointing: false
+  warmup_steps: 2000
+  lr_schedule_steps: 50000
+  min_learning_rate: 0.00005
+  validation_first_step: 28000
+  validation_every_steps: 1000
+  early_stop_min_step: 33000
+  patience_validations: 3
+  log_every_steps: 20
+  checkpoint_every_steps: 1000
+  resume_from: ""
+
+pipeline:
+  output_root: runs/rmdm_hvdit_v4_x0_no_tx_continue
+  environment_path: /data/fzj/conda_envs/RMDM_HVDIT_V2
+  allowed_physical_gpus: [0, 1, 2, 3, 4, 5, 6, 7]
+  allow_gpu_co_tenancy: false
+  wait_for_gpus: false
+  gpu_poll_seconds: 5
+  free_memory_mib: 13000
+  consecutive_free_polls: 1
+  lock_file: runs/rmdm_hvdit_v4_x0_no_tx_continue/.obs_alignment_full_epoch.lock
+  default_through: w16_validation
