@@ -18,7 +18,7 @@ sampling:
 
 t1_train:
   seed: 20260717
-  max_steps: 30000
+  max_steps: 33000
   per_gpu_batch_size: 32
   gradient_accumulation_steps: 2
   effective_global_batch_size: 256
@@ -32,16 +32,16 @@ t1_train:
   warmup_steps: 2000
   lr_schedule_steps: 50000
   min_learning_rate: 0.00005
-  validation_first_step: 26000
-  validation_every_steps: 2000
-  early_stop_min_step: 30000
+  validation_first_step: 28000
+  validation_every_steps: 1000
+  early_stop_min_step: 33000
   patience_validations: 2
   log_every_steps: 20
   checkpoint_every_steps: 500
   resume_from: ""
 
 pipeline:
-  output_root: runs/rmdm_hvdit_v4_x0_no_tx_continue/t1_w1_finetune_uniform_p05_p30_5k_20260901
+  output_root: runs/rmdm_hvdit_v4_x0_no_tx_continue
   environment_path: /data/fzj/conda_envs/RMDM_HVDIT_V2
   allowed_physical_gpus: [0, 1, 2, 3]
   allow_gpu_co_tenancy: false
