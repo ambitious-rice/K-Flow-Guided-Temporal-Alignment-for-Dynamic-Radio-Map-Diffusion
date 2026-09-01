@@ -32,7 +32,7 @@ execution:
   session: w1_sampling_rate_adaln_20260901_retry2
   log: /data/fzj/RMDM_observation_sensitivity_20260901/runs/w1_sampling_rate_adaln_20260901_retry2.launch.log
   started_at: 2026-09-01T16:35:55+08:00
-  status: running_baseline_evaluation
+  status: running_training
 
 status: running
 
@@ -45,5 +45,6 @@ notes:
   - The local adapter is zero-initialized and freezes all inherited W1/HWM parameters.
   - Training is limited to the new continuous-rate branch; baseline and candidate use identical three-scene held-out masks, DDIM noise, rates, and DDIM-20.
   - A first DDP launch exited before work because every rank tried to create the same output directory; retry2 uses rank-zero creation with a barrier and has been verified on GPUs 4-7.
+  - Remote check at 2026-09-01T16:40+08:00: baseline.json is present and the 3,000-step branch training is active; train.jsonl reached step 500 with all four assigned GPUs utilized.
 
-next_action: Monitor baseline evaluation, then the 3,000 optimizer updates and post-training paired evaluation; synchronize summary, metrics, and log after completion.
+next_action: Monitor the remaining optimizer updates and post-training paired evaluation; synchronize summary, metrics, and log after completion.
