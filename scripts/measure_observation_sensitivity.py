@@ -31,12 +31,12 @@ from rmdm.evaluation.fixed_sparse_protocol import (
     deterministic_frame_noise_like,
     frame_names_by_sample,
 )
-from rmdm_hvdit_v4_joint.config import load_config
 from rmdm_hvdit_v4_joint.evaluation.evaluator import manifest_video_ids
 from rmdm_hvdit_v4_joint.model import build_t1_system
 from rmdm_hvdit_v4_joint.evaluation.legacy_rmdm import LegacyRMDMT1ProtocolAdapter
 from rmdm_hvdit_v4_x0_continue import ARCHITECTURE_ID
 from rmdm_hvdit_v4_x0_continue.checkpoint import CONTINUATION_SCHEMA
+from rmdm_hvdit_v4_x0_continue.config import load_config
 from train_sparse_dynamic_rmdm import build_model_config
 from utils import build_unet_from_config
 
