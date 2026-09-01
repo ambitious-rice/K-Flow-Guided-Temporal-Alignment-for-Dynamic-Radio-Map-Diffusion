@@ -5,7 +5,7 @@ goal: >-
   AdaLN-style residual modulation, improves held-out sparse Radio Map recovery.
 
 source:
-  commit: pending_local_commit
+  commit: 08ff883fd6128b4b8ba687b66081793068ad271a
   branch: main
   dirty: true
   dirty_note: Existing AGENTS.md and docs/过去阶段实验分析/ changes belong to the user and are excluded.
@@ -18,17 +18,32 @@ remote:
 execution:
   environment: rmdm_hvdit_v2 (RMDM_HVDIT_V2)
   gpus: [4, 5, 6, 7]
-  status: pending_preflight
+  command: >-
+    CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=/data/fzj/RMDM_observation_sensitivity_20260901:/data/fzj/RMDM_observation_sensitivity_20260901/src:/data/fzj/RMDM:/data/fzj/RMDM/src
+    /data/fzj/conda_envs/RMDM_HVDIT_V2/bin/python -m accelerate.commands.launch
+    --multi_gpu --num_processes 4 --mixed_precision bf16 --main_process_port 29622
+    -m experimental.sampling_rate_adaln.run_w1_sampling_rate_adaln
+    --config /data/fzj/RMDM_observation_sensitivity_20260901/configs/hvdit_v4_x0_w16_ratebalanced_no_tx/w1_sampling_rate_adaln_4gpu.yaml
+    --source-checkpoint /data/fzj/RMDM/runs/rmdm_hvdit_v4_x0_no_tx_continue/t1_from10k_to50k/checkpoints/best.pth
+    --manifest /data/fzj/RMDM/manifests/dynamic_sparse_v2_semantic_vehicle/val_subset_v1.json
+    --output-dir /data/fzj/RMDM_observation_sensitivity_20260901/runs/w1_sampling_rate_adaln_20260901_retry2
+    --steps 3000 --learning-rate 0.0002 --rates 1,2,3,5,8,10 --ddim-steps 20
+  pid: 2820222
+  session: w1_sampling_rate_adaln_20260901_retry2
+  log: /data/fzj/RMDM_observation_sensitivity_20260901/runs/w1_sampling_rate_adaln_20260901_retry2.launch.log
+  started_at: 2026-09-01T16:35:55+08:00
+  status: running_baseline_evaluation
 
-status: preparing
+status: running
 
 artifacts:
-  remote: /data/fzj/RMDM_observation_sensitivity_20260901/runs/w1_sampling_rate_adaln_20260901
+  remote: /data/fzj/RMDM_observation_sensitivity_20260901/runs/w1_sampling_rate_adaln_20260901_retry2
   local: /data_p6/fzj/projects/RMDM/results/w1_sampling_rate_adaln_20260901
 
 notes:
   - W1 legacy source is untracked on the remote runtime and is read-only.
   - The local adapter is zero-initialized and freezes all inherited W1/HWM parameters.
   - Training is limited to the new continuous-rate branch; baseline and candidate use identical three-scene held-out masks, DDIM noise, rates, and DDIM-20.
+  - A first DDP launch exited before work because every rank tried to create the same output directory; retry2 uses rank-zero creation with a barrier and has been verified on GPUs 4-7.
 
-next_action: Run a four-GPU import/one-step smoke test, then launch the bounded 3,000-step job if it passes.
+next_action: Monitor baseline evaluation, then the 3,000 optimizer updates and post-training paired evaluation; synchronize summary, metrics, and log after completion.
