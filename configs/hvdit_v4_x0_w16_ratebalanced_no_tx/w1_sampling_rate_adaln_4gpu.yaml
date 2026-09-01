@@ -10,17 +10,31 @@ model:
 
 t1_train:
   seed: 20260717
+  max_steps: 50000
   per_gpu_batch_size: 32
   gradient_accumulation_steps: 2
   effective_global_batch_size: 256
+  learning_rate: 0.0005
   mixed_precision: bf16
   gradient_checkpointing: false
   betas: [0.9, 0.95]
   epsilon: 0.00000001
+  weight_decay: 0.01
   gradient_clip_norm: 1.0
+  warmup_steps: 2000
+  lr_schedule_steps: 50000
+  min_learning_rate: 0.00005
+  validation_first_step: 15000
+  validation_every_steps: 5000
+  early_stop_min_step: 25000
+  patience_validations: 2
+  log_every_steps: 20
+  checkpoint_every_steps: 1000
 
 pipeline:
+  output_root: runs/rmdm_hvdit_v4_x0_no_tx_continue
   allowed_physical_gpus: [4, 5, 6, 7]
   allow_gpu_co_tenancy: false
   wait_for_gpus: false
   free_memory_mib: 13000
+  lock_file: runs/rmdm_hvdit_v4_x0_no_tx_continue/.continuation.lock
