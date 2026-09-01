@@ -17,7 +17,7 @@ remote:
 
 execution:
   environment: rmdm_hvdit_v2 (RMDM_HVDIT_V2)
-  gpus: [0, 1, 2, 3]
+  gpus: [4, 5, 6, 7]
   status: pending_preflight
 
 status: preparing

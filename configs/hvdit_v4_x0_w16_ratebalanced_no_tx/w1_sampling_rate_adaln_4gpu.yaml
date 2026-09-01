@@ -20,7 +20,7 @@ t1_train:
   gradient_clip_norm: 1.0
 
 pipeline:
-  allowed_physical_gpus: [0, 1, 2, 3]
+  allowed_physical_gpus: [4, 5, 6, 7]
   allow_gpu_co_tenancy: false
   wait_for_gpus: false
   free_memory_mib: 13000
