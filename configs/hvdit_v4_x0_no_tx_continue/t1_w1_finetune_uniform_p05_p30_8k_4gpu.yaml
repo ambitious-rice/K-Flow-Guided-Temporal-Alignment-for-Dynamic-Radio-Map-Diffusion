@@ -25,7 +25,7 @@ evaluation:
 t1_train:
   seed: 20260717
   max_steps: 33000
-  per_gpu_batch_size: 32
+  per_gpu_batch_size: 16
   gradient_accumulation_steps: 2
   effective_global_batch_size: 256
   learning_rate: 0.0005
@@ -49,7 +49,7 @@ t1_train:
 pipeline:
   output_root: runs/rmdm_hvdit_v4_x0_no_tx_continue
   environment_path: /data/fzj/conda_envs/RMDM_HVDIT_V2
-  allowed_physical_gpus: [0, 1, 2, 3]
+  allowed_physical_gpus: [0, 1, 2, 3, 4, 5, 6, 7]
   allow_gpu_co_tenancy: false
   wait_for_gpus: false
   gpu_poll_seconds: 60
