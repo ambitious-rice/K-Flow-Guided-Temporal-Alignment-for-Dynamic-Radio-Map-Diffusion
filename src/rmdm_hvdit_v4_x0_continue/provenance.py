@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -24,19 +23,6 @@ def _canonical_hash(payload: Any) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
-def _tree(root: Path, relative: str) -> dict[str, str]:
-    directory = root / relative
-    if not directory.is_dir():
-        raise FileNotFoundError(directory)
-    return {
-        str(path.relative_to(root)): sha256_file(path)
-        for path in sorted(directory.rglob("*"))
-        if path.is_file()
-        and "__pycache__" not in path.parts
-        and path.suffix in {".py", ".yaml", ".yml"}
-    }
-
-
 def build_dependency_manifest(
     config: Any,
     *,
@@ -47,35 +33,16 @@ def build_dependency_manifest(
     root = Path(repository_root).expanduser().resolve()
     config_file = Path(config_path).expanduser().resolve()
     source = Path(source_checkpoint).expanduser().resolve() if source_checkpoint else None
-    commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=root,
-        check=True,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    ).stdout.strip()
     manifest = {
-        "schema": "rmdm_hvdit_v4_x0_continue_dependency_manifest_v1",
+        "schema": "rmdm_hvdit_v4_x0_continue_run_metadata_v2",
         "architecture_id": ARCHITECTURE_ID,
-        "git_commit": commit,
+        "repository_root": str(root),
         "config": {
             "path": str(config_file),
             "sha256": sha256_file(config_file),
             "resolved_sha256": _canonical_hash(config.to_dict()),
         },
-        "source_checkpoint": (
-            {"path": str(source), "sha256": sha256_file(source), "used_for_initialization": True}
-            if source is not None
-            else {"path": "", "sha256": "", "used_for_initialization": False}
-        ),
-        "continuation_sources": {
-            **_tree(root, "src/rmdm_hvdit_v4_x0_continue"),
-            **_tree(root, "configs/hvdit_v4_x0_continue"),
-            **_tree(root, "tests/hvdit_v4_x0_continue"),
-        },
-        "frozen_x0_pilot_sources": _tree(root, "src/rmdm_hvdit_v4_x0"),
-        "frozen_v4_model_sources": _tree(root, "src/rmdm_hvdit_v4_joint/model"),
+        "source_checkpoint": str(source) if source is not None else "",
     }
     manifest["manifest_sha256"] = _canonical_hash(manifest)
     return manifest

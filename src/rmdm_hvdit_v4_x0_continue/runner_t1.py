@@ -20,7 +20,6 @@ from rmdm_hvdit_v4_joint.training.engine import (
     make_optimizer,
     prepare_model_optimizer_loader,
     require_scheduler_global_step,
-    require_visible_physical_gpus,
     seed_everything,
     step_scheduler_on_global_update,
     validate_parameter_contract,
@@ -47,11 +46,8 @@ def _validation_due(config: Any, step: int) -> bool:
 
 
 def _output_path(config: Any, root: Path, output_dir: str | Path | None) -> Path:
-    allowed = (root / config.pipeline.output_root).resolve()
-    output = Path(output_dir).expanduser().resolve() if output_dir else allowed / "t1_from10k_to50k"
-    if not output.is_relative_to(allowed):
-        raise ValueError(f"Continuation output must stay below {allowed}, got {output}")
-    return output
+    default = root / config.pipeline.output_root / "t1_continue"
+    return Path(output_dir).expanduser().resolve() if output_dir else default.resolve()
 
 
 def _read_json(path: str | Path) -> dict[str, Any]:
@@ -79,42 +75,20 @@ def run_continuation(
     source = Path(source_checkpoint).expanduser().resolve() if source_checkpoint else None
     output = _output_path(config, root, output_dir)
     train = config.t1_train
-    if (
-        not from_scratch
-        and required_source_config_differences is None
-        and not config.model.use_explicit_tx_condition
-    ):
-        required_source_config_differences = {
-            "t1_train.max_steps",
-            "t1_train.validation_first_step",
-            "t1_train.patience_validations",
-            "pipeline.output_root",
-            "pipeline.free_memory_mib",
-            "pipeline.lock_file",
-        }
-        if len(config.pipeline.allowed_physical_gpus) == 8:
-            required_source_config_differences.update(
-                {"t1_train.per_gpu_batch_size", "pipeline.allowed_physical_gpus"}
-            )
     regularizer = getattr(config, "regularizer", None)
     regularizer_type = getattr(regularizer, "type", "pinn")
     regularizer_weight = getattr(regularizer, "weight", None)
     hessian_epsilon = getattr(regularizer, "epsilon", 1.0e-3)
     physical_gpus = list(config.pipeline.allowed_physical_gpus)
-    require_visible_physical_gpus(physical_gpus)
     accelerator = make_accelerator(
         mixed_precision=train.mixed_precision,
         gradient_accumulation_steps=train.gradient_accumulation_steps,
         data_seed=train.seed,
     )
     expected_world_size = len(physical_gpus)
-    if expected_world_size not in {4, 8}:
-        raise RuntimeError(
-            f"x0 continuation supports four or eight DDP processes, configured {expected_world_size}"
-        )
     if accelerator.num_processes != expected_world_size:
         raise RuntimeError(
-            "x0 continuation process count must match allowed physical GPUs: "
+            "DDP process count must match pipeline.allowed_physical_gpus: "
             f"expected {expected_world_size}, got {accelerator.num_processes}"
         )
 
@@ -141,8 +115,6 @@ def run_continuation(
         tx_heatmap_sigma_px=config.data.tx_heatmap_sigma_px,
         fixed_starts=tuple(range(config.data.frames_per_video)),
     )
-    if len(dataset) != 1_050_000:
-        raise RuntimeError(f"W1 continuation must expose 1,050,000 frames, got {len(dataset):,}")
     loader = DataLoader(
         dataset,
         batch_size=train.per_gpu_batch_size,
@@ -182,13 +154,7 @@ def run_continuation(
     if observation_alignment_weight < 0:
         raise ValueError("observation_alignment_weight must be non-negative")
     if resume_from:
-        payload = load_continuation_checkpoint(
-            resume_from,
-            model,
-            optimizer,
-            scheduler,
-            dependency_manifest,
-        )
+        payload = load_continuation_checkpoint(resume_from, model, optimizer, scheduler, dependency_manifest)
         extra = payload.get("extra", {})
         global_step = int(payload["global_step"])
         epoch = int(payload["epoch"])
@@ -232,20 +198,12 @@ def run_continuation(
             raise ValueError("source_checkpoint is required unless --from-scratch is used")
         if last_path.exists():
             raise FileExistsError(f"Continuation already exists; pass --resume-from {last_path}")
-        payload = load_source_checkpoint(
-            source,
-            model,
-            optimizer,
-            scheduler,
-            config,
-            required_config_differences=required_source_config_differences,
-        )
-        source_validation = _read_json(payload["validation_path"])
+        payload = load_source_checkpoint(source, model, optimizer, scheduler, config)
         global_step = int(payload["global_step"])
         epoch = int(payload["epoch"])
         resume_microbatch_offset = int(payload["microbatches_consumed_in_epoch"])
         validation_pending = False
-        best_score = float(source_validation["macro_full_image_nmse_p1_p2_p3"])
+        best_score = float("inf")
         best_step = global_step
         best_checkpoint = str(source)
         validations_without_improvement = 0

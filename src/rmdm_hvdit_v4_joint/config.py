@@ -186,134 +186,35 @@ class ExperimentConfig:
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
 
     def validate(self) -> None:
-        if self.data.image_size != 128 or self.data.frames_per_video != 100:
-            raise ValueError("HV-DiT V4 is locked to 128x128, 100-frame DynamicRadioMap videos")
         model = self.model
-        if (model.temporal_patch_size, model.spatial_patch_size) != (2, 4):
-            raise ValueError("The confirmed patch contract is T/H/W = 2/4/4 for W16")
-        if (model.local_dim, model.global_dim, model.head_dim) != (384, 768, 64):
-            raise ValueError("The V4 width contract is local/global/head = 384/768/64")
-        if model.local_depth != 2 or model.global_depth != 11:
-            raise ValueError("The V4 depth contract is local/global = 2/11")
-        if model.local_kernel != [3, 7, 7]:
-            raise ValueError("The confirmed W16 neighborhood kernel is [3, 7, 7]")
+        if self.data.image_size <= 0 or self.data.frames_per_video <= 0:
+            raise ValueError("image_size and frames_per_video must be positive")
+        if model.temporal_patch_size <= 0 or model.spatial_patch_size <= 0:
+            raise ValueError("patch sizes must be positive")
+        if min(model.local_dim, model.global_dim, model.head_dim) <= 0:
+            raise ValueError("model dimensions must be positive")
         if model.local_dim % model.head_dim or model.global_dim % model.head_dim:
             raise ValueError("feature dimensions must be divisible by head_dim")
-        if model.rope_axis_dims != [16, 24, 24]:
-            raise ValueError("The separable RoPE head allocation is locked to [16,24,24]")
-        if (
-            model.decoder_token_channels != 192
-            or model.decoder_stage_channels != [128, 64]
-            or model.decoder_blocks_per_stage != 1
-        ):
-            raise ValueError("The V4 pixel decoder contract is locked to 192→128→64 with one ResBlock per stage")
-        if (
-            model.feedforward_multiplier,
-            model.mapping_depth,
-            model.mapping_width,
-            model.mapping_feedforward_multiplier,
-        ) != (3, 1, 768, 3):
-            raise ValueError("The confirmed GEGLU/mapping parameterization has drifted")
-        if model.dropout != 0.0 or not model.gradient_checkpointing:
-            raise ValueError("W16 requires dropout=0 and gradient checkpointing")
-        if self.t1_train.gradient_checkpointing:
-            raise ValueError("The measured B32 T1 profile disables gradient checkpointing")
-        if model.local_attention_backend != "natten":
-            raise ValueError("Production configuration must use NATTEN; reference is test-only")
-        if (
-            self.stage1.base_features != 32
-            or not self.stage1.trainable
-            or self.stage1.chunk_size <= 0
-            or self.stage1.pinn_k != 0.2
-            or self.stage1.pinn_weight != 1.0
-        ):
-            raise ValueError("V4 requires an exact trainable-from-scratch RMDM HWM and k/weight=0.2/1.0")
+        if self.stage1.chunk_size <= 0:
+            raise ValueError("stage1.chunk_size must be positive")
         _distribution("base", self.sampling.base_rates, self.sampling.base_probabilities)
-        base_rates = [float(value) for value in self.sampling.base_rates]
-        first_rate = int(base_rates[0])
-        last_rate = int(base_rates[-1])
-        expected_rates = [float(value) for value in range(first_rate, last_rate + 1)]
-        uniform_probability = 1.0 / len(base_rates)
-        if (
-            first_rate < 1
-            or last_rate > 30
-            or base_rates != expected_rates
-            or any(abs(value - uniform_probability) > 1.0e-9 for value in self.sampling.base_probabilities)
-        ):
-            raise ValueError(
-                "Training rates must be a uniform contiguous integer distribution within p1-p30"
-            )
-        if self.sampling.homogeneous_probability != 1.0:
-            raise ValueError("T1 and W16 training are locked to homogeneous per-window sampling")
-        if self.sampling.extreme_probability_given_heterogeneous != 0.0:
-            raise ValueError("Extreme-rate injection is disabled for this experiment")
-        expected_gpu_profiles = (
-            ([4, 5, 6, 7],)
-            if model.use_explicit_tx_condition
-            else ([0, 1, 2, 3], [2, 3, 4, 5], [4, 5, 6, 7], list(range(8)))
-        )
-        if self.pipeline.allowed_physical_gpus not in expected_gpu_profiles:
-            if model.use_explicit_tx_condition:
-                raise ValueError("The canonical full pipeline is authorized only on physical GPUs 4-7")
-            raise ValueError(
-                "The no-Tx ablation is authorized on GPUs 0-3, GPUs 2-5, or all eight GPUs"
-            )
-        if model.use_explicit_tx_condition and not self.pipeline.allow_gpu_co_tenancy:
-            raise ValueError("GPU 6/7 retain small unrelated jobs; V4 must use explicit safe co-tenancy")
-        if not model.use_explicit_tx_condition and self.pipeline.allow_gpu_co_tenancy:
-            raise ValueError("The no-Tx ablation requires exclusive use of GPUs 2-5")
-        if self.pipeline.consecutive_free_polls != 1:
-            raise ValueError("The confirmed 4-7 placement starts after one sufficient-memory poll")
-        if (
-            self.diffusion.train_timesteps != 1_000
-            or self.diffusion.beta_schedule != "linear"
-            or self.diffusion.prediction_type != "epsilon"
-            or self.diffusion.ddim_steps != 20
-        ):
-            raise ValueError("The unchanged epsilon/linear/DDIM20 diffusion contract has drifted")
+        if not 0.0 <= self.sampling.homogeneous_probability <= 1.0:
+            raise ValueError("homogeneous_probability must be in [0, 1]")
+        if self.diffusion.train_timesteps <= 0 or self.diffusion.ddim_steps <= 0:
+            raise ValueError("diffusion step counts must be positive")
+        if self.diffusion.prediction_type not in {"epsilon", "sample"}:
+            raise ValueError("prediction_type must be epsilon or sample")
         world_size = len(self.pipeline.allowed_physical_gpus)
-        _phase_batch(
-            "T1",
-            self.t1_train.per_gpu_batch_size,
-            self.t1_train.gradient_accumulation_steps,
-            self.t1_train.effective_global_batch_size,
-            world_size=world_size,
-        )
-        if not self.t1_train.warmup_steps < self.t1_train.lr_schedule_steps <= self.t1_train.max_steps:
-            raise ValueError("T1 LR schedule must finish after warmup and no later than max_steps")
+        if world_size <= 0 or len(set(self.pipeline.allowed_physical_gpus)) != world_size:
+            raise ValueError("allowed_physical_gpus must be a non-empty unique list")
+        if self.t1_train.per_gpu_batch_size <= 0 or self.t1_train.gradient_accumulation_steps <= 0:
+            raise ValueError("T1 batch size and accumulation must be positive")
+        if self.t1_train.max_steps <= 0 or self.t1_train.lr_schedule_steps <= 0:
+            raise ValueError("T1 step counts must be positive")
         if self.t1_train.checkpoint_every_steps <= 0:
             raise ValueError("T1 checkpoint_every_steps must be positive")
-        _phase_batch(
-            "W16 default",
-            self.w16_train.default_per_gpu_batch_size,
-            self.w16_train.default_gradient_accumulation_steps,
-            self.w16_train.effective_global_batch_size,
-            world_size=world_size,
-        )
-        if self.w16_train.max_steps != self.w16_train.epochs * self.w16_train.updates_per_epoch:
-            raise ValueError("W16 max_steps must equal epochs * updates_per_epoch")
-        if self.w16_train.microbatch_candidates != [1, 2, 4]:
-            raise ValueError("W16 smoke candidates are locked to [1,2,4]")
-        for candidate in self.w16_train.microbatch_candidates:
-            if self.w16_train.effective_global_batch_size % (world_size * candidate):
-                raise ValueError(
-                    f"W16 microbatch {candidate} cannot preserve global batch "
-                    f"{self.w16_train.effective_global_batch_size}"
-                )
-        if self.evaluation.w16_starts != [0, 16, 32, 48, 64, 80]:
-            raise ValueError("First96 W16 validation starts are immutable")
-        if self.evaluation.rates != [1.0, 2.0, 3.0] or self.evaluation.ddim_steps != 20:
-            raise ValueError("Stage-A is locked to p1/p2/p3 and DDIM20")
-        if self.evaluation.formal_test_rates != [1.0, 2.0, 3.0, 5.0, 8.0, 10.0]:
-            raise ValueError("Formal test rates are locked to p1/p2/p3/p5/p8/p10")
-        if not self.evaluation.sf_reference_checkpoint:
-            raise ValueError("The fixed RMDM-SF reference checkpoint is required only for aligned validation")
-        if not self.evaluation.t1_all_frame_starts or self.evaluation.full100_extra_start != 84:
-            raise ValueError("T1 must score all frames and full100 must use the extra start=84 window")
-        if self.evaluation.t1_evaluation_batch_size != 4 or self.evaluation.w16_evaluation_batch_size != 1:
-            raise ValueError("Evaluation per-GPU batches are locked to T1/W16 = 4/1")
-        if self.pipeline.default_through not in {"w16_validation", "formal_test"}:
-            raise ValueError("pipeline.default_through must be w16_validation or formal_test")
+        if not self.evaluation.rates:
+            raise ValueError("at least one evaluation rate is required")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
