@@ -39,6 +39,15 @@ def test_fixed_training_config_loads() -> None:
     assert config.alignment.peak_weight == 0.25
 
 
+def test_eight_gpu_smoke_config_loads() -> None:
+    config = load_observation_balance_config(
+        ROOT / "configs/hvdit_v4_x0_observation_balance/w1_smoke_8gpu.yaml"
+    )
+    assert config.max_steps == 2
+    assert config.segment_steps == 2
+    assert config.evaluation.gpus == list(range(8))
+
+
 def test_fast_comparison_uses_clean_and_noisy_constraints() -> None:
     baseline = _summary(1.0, 1.0, 2.0, 2.0)
     candidate = _summary(0.9, 0.9, 2.04, 2.04)

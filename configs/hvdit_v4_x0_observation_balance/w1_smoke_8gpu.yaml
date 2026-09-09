@@ -1,0 +1,53 @@
+run_id: w1_observation_balance_smoke_8gpu
+seed: 20260717
+
+model_config: configs/hvdit_v4_x0_no_tx_continue/t1_obs_alignment_from_best25k_8gpu.yaml
+source_checkpoint: runs/rmdm_hvdit_v4_x0_no_tx_continue/t1_from10k_to50k/checkpoints/best.pth
+output_dir: runs/rmdm_hvdit_v4_x0_observation_balance/w1_smoke_8gpu
+
+max_steps: 2
+segment_steps: 2
+log_every_steps: 1
+mixed_precision: bf16
+
+noise:
+  standard_deviations: [0.0, 0.01, 0.03, 0.05]
+  probabilities: [0.50, 0.20, 0.15, 0.15]
+
+alignment:
+  warmup_steps: 1
+  hold_steps: 1
+  peak_weight: 0.25
+  final_weight: 0.05
+  heldout_ratio: 0.25
+  heldout_weight: 0.10
+  condition_dropout_probability: 0.10
+
+optimizer:
+  learning_rate: 0.0001
+  min_learning_rate: 0.00001
+  warmup_steps: 0
+  betas: [0.9, 0.95]
+  epsilon: 0.00000001
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+
+fast_decision:
+  minimum_clean_relative_improvement: 0.05
+  maximum_noisy_relative_regression: 0.03
+  full_test_improvement_increment: 0.02
+  plateau_minimum_step: 1
+  plateau_improvement: 0.005
+  plateau_evaluations: 1
+  no_eligible_stop_step: 2
+  excessive_noisy_regression: 0.08
+  excessive_noisy_evaluations: 1
+
+evaluation:
+  suite: configs/evaluation/observation_balance_validation_v1.yaml
+  manifest: manifests/dynamic_sparse_v2_semantic_vehicle/val_subset_v1.json
+  output_root: runs/observation_balance_validation
+  baseline_id: original_w1
+  gpus: [0, 1, 2, 3, 4, 5, 6, 7]
+  python: /data/fzj/conda_envs/RMDM_HVDIT_V2/bin/python
+  base_port: 29700
