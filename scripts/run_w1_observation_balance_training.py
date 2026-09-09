@@ -120,9 +120,8 @@ def main() -> None:
     if state["state"] in {"complete", "stopped"}:
         print(json.dumps(state, ensure_ascii=False, sort_keys=True))
         return
-    baseline_summary = _resolve(root, evaluation.output_root) / evaluation.baseline_id / "summary.json"
-    baseline = read_json(baseline_summary)
     model_config = _resolve(root, config.model_config)
+    source_checkpoint = _resolve(root, config.source_checkpoint)
     suite = _resolve(root, evaluation.suite)
     manifest = _resolve(root, evaluation.manifest)
     validation_root = _resolve(root, evaluation.output_root)
@@ -136,6 +135,15 @@ def main() -> None:
         suite=suite, manifest=manifest, output_root=validation_root, gpus=gpus,
         base_port=evaluation.base_port, baseline_id=evaluation.baseline_id,
     )
+    baseline_summary = validation_root / evaluation.baseline_id / "summary.json"
+    if not baseline_summary.exists():
+        validate(
+            candidate_id=evaluation.baseline_id,
+            stages="fast_w1,full_w1,w1_da_gate",
+            checkpoint=source_checkpoint,
+            compare=False,
+        )
+    baseline = read_json(baseline_summary)
 
     while int(state["branch_step"]) < config.max_steps:
         train_command = [
