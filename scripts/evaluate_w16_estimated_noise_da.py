@@ -25,9 +25,12 @@ from rmdm.evaluation.fixed_sparse_protocol import (
 )
 from rmdm.evaluation.metrics import MetricAccumulator
 from rmdm_hvdit_v4_joint.training.engine import append_jsonl, write_json_atomic
-from rmdm_hvdit_v4_x0_w16_ratebalanced import CANDIDATE_SCHEMA, CHECKPOINT_SCHEMA
-from rmdm_hvdit_v4_x0_w16_ratebalanced.config import load_config
-from rmdm_hvdit_v4_x0_w16_ratebalanced.model import build_w16_system
+from rmdm_hvdit_v4_joint.config import load_config
+from rmdm_hvdit_v4_joint.model import build_w16_system
+from rmdm_hvdit_v4_joint.training.checkpoint import (
+    W16_CHECKPOINT_SCHEMA,
+    W16_SELECTION_CANDIDATE_SCHEMA,
+)
 from rmdm_noise_estimation.assimilation import NoiseAwareDDIMSampler
 from rmdm_noise_estimation.runner import balanced_manifest_videos, make_loader, unit_name
 
@@ -97,7 +100,13 @@ def main() -> None:
 
     model = build_w16_system(config)
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    if checkpoint.get("schema") not in {CHECKPOINT_SCHEMA, CANDIDATE_SCHEMA}:
+    accepted_schemas = {
+        W16_CHECKPOINT_SCHEMA,
+        W16_SELECTION_CANDIDATE_SCHEMA,
+        "rmdm_hvdit_v4_x0_w16_ratebalanced_checkpoint_v1",
+        "rmdm_hvdit_v4_x0_w16_ratebalanced_candidate_v1",
+    }
+    if checkpoint.get("schema") not in accepted_schemas:
         raise ValueError("checkpoint is not a rate-balanced W16 artifact")
     model.load_state_dict(checkpoint["model"], strict=True)
     model.requires_grad_(False).eval().to(accelerator.device)

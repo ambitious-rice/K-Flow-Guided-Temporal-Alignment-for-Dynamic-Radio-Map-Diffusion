@@ -2,7 +2,7 @@
 
 ## 1. 工作模式
 
-本项目采用“本地开发 + 远程执行”的工作方式。
+本项目采用“本地开发 + 远程执行”的工作方式, 核心的使用方法在remote-research-workflow的skill中。
 
 本地节点负责：
 
@@ -467,3 +467,39 @@ run 文件表示持久记录，远程机器表示当前事实。
 **聊天记录不作为项目状态的唯一来源。**
 
 在不违反这些边界的前提下，根据实际任务自由选择最合适的 shell 命令和工作方式。
+
+## Communication
+
+- Use plain technical language.
+- Prefer terminology already used by this project.
+- Do not invent process terminology, architecture labels, or abstractions
+  unless they are necessary to describe actual code.
+- Do not narrate generic software-engineering principles.
+- Explain changes in terms of concrete files, functions, commands,
+  experiments, and observed results.
+- Keep progress updates short.
+
+## Risk handling
+
+Routine, reversible repository edits do not require a risk discussion.
+
+Only stop or explicitly warn for:
+- destructive operations;
+- credential or secret exposure;
+- irreversible external side effects;
+- expensive compute above the configured threshold;
+- ambiguity that can materially invalidate the experiment.
+
+Do not produce generic safety, security, rollback, or production-readiness
+sections unless they are relevant to the current task.
+
+## Research behavior
+
+Treat proposed explanations as hypotheses until supported by experiments.
+
+Distinguish:
+- observed result;
+- interpretation;
+- speculation.
+
+Do not convert a plausible explanation into a paper claim.

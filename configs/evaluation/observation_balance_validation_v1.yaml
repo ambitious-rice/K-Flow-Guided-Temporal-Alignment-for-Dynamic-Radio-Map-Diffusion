@@ -1,0 +1,107 @@
+schema: rmdm_observation_balance_suite_v1
+suite_id: observation_balance_validation_v1
+split: val
+
+# These values are fixed for every experiment using this test suite.
+seeds:
+  global: 20260909
+  dataset: 20260717
+  mask: 20260714
+  ddim_noise: 20260717
+  observation_noise: 20260805
+
+guidance:
+  strength: 0.5
+  guided_steps: 7
+  max_update: 0.25
+
+stages:
+  fast_w1:
+    variant: w1
+    subset_stage: stage_a
+    videos_per_scene: 1
+    starts: all
+    rates: [1, 3]
+    noise_stds: [0, 0.05]
+    methods: [no_da]
+    ddim_steps: 20
+    world_size: 8
+
+  full_w1:
+    variant: w1
+    subset_stage: stage_a
+    videos_per_scene: 10
+    starts: all
+    rates: [1, 2, 3]
+    noise_stds: [0, 0.01, 0.05]
+    methods: [no_da]
+    ddim_steps: 20
+    world_size: 8
+
+  w1_da_gate:
+    variant: w1
+    subset_stage: stage_a
+    videos_per_scene: 10
+    starts: all
+    rates: [1, 3]
+    noise_stds: [0.01, 0.05]
+    methods: [known_noise_da]
+    ddim_steps: 20
+    world_size: 8
+
+  fast_w16:
+    variant: w16
+    subset_stage: stage_a
+    videos_per_scene: 1
+    starts: [0, 32, 64]
+    rates: [1, 3]
+    noise_stds: [0, 0.05]
+    methods: [no_da, known_noise_da]
+    ddim_steps: 20
+    world_size: 8
+
+  full_w16:
+    variant: w16
+    subset_stage: stage_a
+    videos_per_scene: 10
+    starts: [0, 16, 32, 48, 64, 80]
+    rates: [1, 2, 3]
+    noise_stds: [0, 0.01, 0.03, 0.05]
+    methods: [no_da]
+    ddim_steps: 20
+    world_size: 8
+
+  w16_da_gate:
+    variant: w16
+    subset_stage: stage_a
+    videos_per_scene: 10
+    starts: [0, 16, 32, 48, 64, 80]
+    rates: [1, 2, 3]
+    noise_stds: [0.01, 0.03, 0.05]
+    methods: [known_noise_da]
+    ddim_steps: 20
+    world_size: 8
+
+selection:
+  w1:
+    clean_stage: full_w1
+    noisy_stage: full_w1
+    da_stage: w1_da_gate
+    clean_noise_std: 0
+    robustness_noise_std: 0.05
+    da_noise_std: 0.05
+    minimum_clean_relative_improvement: 0.10
+    maximum_noisy_relative_regression: 0.02
+    minimum_da_relative_improvement: 0.02
+    require_da_improvement_each_rate: true
+  w16:
+    clean_stage: full_w16
+    noisy_stage: full_w16
+    da_stage: w16_da_gate
+    clean_noise_std: 0
+    robustness_noise_std: 0.05
+    da_noise_std: 0.05
+    minimum_clean_relative_improvement: 0.00
+    maximum_noisy_relative_regression: 0.02
+    minimum_da_relative_improvement: 0.02
+    require_da_improvement_each_rate: true

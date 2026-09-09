@@ -7,7 +7,35 @@ from typing import Any
 import torch
 from diffusers import DDIMScheduler
 
-from rmdm_hvdit_v4_x0_w16_ratebalanced.inverse_sampling import observation_gradient_update
+
+def observation_gradient_update(
+    gradient: torch.Tensor,
+    per_sample_loss: torch.Tensor,
+    *,
+    strength: float,
+    normalization: str,
+    max_update: float,
+    observation_noise_variance: float = 0.0,
+) -> torch.Tensor:
+    """Convert observation gradients into bounded, noise-floor-aware updates."""
+
+    gradient = gradient.float()
+    if normalization in {"rms", "rms_noise_gate"}:
+        gradient_rms = gradient.square().flatten(1).mean(1).sqrt().clamp_min(1.0e-12)
+        loss = per_sample_loss.detach().float()
+        if normalization == "rms":
+            amplitude = (loss - float(observation_noise_variance)).clamp_min(0.0).sqrt()
+            scale = float(strength) * amplitude / gradient_rms
+        else:
+            active = (loss > float(observation_noise_variance)).float()
+            scale = float(strength) * loss.sqrt() * active / gradient_rms
+        shape = (gradient.shape[0],) + (1,) * (gradient.ndim - 1)
+        update = gradient * scale.reshape(shape)
+    elif normalization == "none":
+        update = gradient * float(strength)
+    else:
+        raise ValueError(f"unknown gradient normalization: {normalization}")
+    return update.clamp(min=-float(max_update), max=float(max_update))
 
 
 class NoiseAwareDDIMSampler:
@@ -129,4 +157,4 @@ class NoiseAwareDDIMSampler:
         return sample.clamp(0.0, 1.0)
 
 
-__all__ = ["NoiseAwareDDIMSampler"]
+__all__ = ["NoiseAwareDDIMSampler", "observation_gradient_update"]

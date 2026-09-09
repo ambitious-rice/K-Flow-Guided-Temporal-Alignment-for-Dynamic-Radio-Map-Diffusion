@@ -17,9 +17,12 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 import torch
 from accelerate import Accelerator, DataLoaderConfiguration
 
-from rmdm_hvdit_v4_x0_w16_ratebalanced import CANDIDATE_SCHEMA, CHECKPOINT_SCHEMA
-from rmdm_hvdit_v4_x0_w16_ratebalanced.config import load_config
-from rmdm_hvdit_v4_x0_w16_ratebalanced.model import build_w16_system
+from rmdm_hvdit_v4_joint.config import load_config
+from rmdm_hvdit_v4_joint.model import build_w16_system
+from rmdm_hvdit_v4_joint.training.checkpoint import (
+    W16_CHECKPOINT_SCHEMA,
+    W16_SELECTION_CANDIDATE_SCHEMA,
+)
 from rmdm_hvdit_v4_joint.training.engine import write_json_atomic
 from rmdm_noise_estimation.runner import balanced_manifest_videos, make_loader, run_units
 
@@ -81,7 +84,13 @@ def main() -> None:
     loader = make_loader(accelerator, config, videos, starts)
     model = build_w16_system(config)
     payload = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    if payload.get("schema") not in {CHECKPOINT_SCHEMA, CANDIDATE_SCHEMA}:
+    accepted_schemas = {
+        W16_CHECKPOINT_SCHEMA,
+        W16_SELECTION_CANDIDATE_SCHEMA,
+        "rmdm_hvdit_v4_x0_w16_ratebalanced_checkpoint_v1",
+        "rmdm_hvdit_v4_x0_w16_ratebalanced_candidate_v1",
+    }
+    if payload.get("schema") not in accepted_schemas:
         raise ValueError("checkpoint is not a rate-balanced W16 artifact")
     model.load_state_dict(payload["model"], strict=True)
     model.requires_grad_(False).to(accelerator.device)
