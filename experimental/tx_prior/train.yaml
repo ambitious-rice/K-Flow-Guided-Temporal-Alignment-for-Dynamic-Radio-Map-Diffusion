@@ -1,0 +1,25 @@
+data:
+  root: /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
+  split_file: /data_p6/fzj/resources/RMDM/components/dataset_metadata/multi20_formal_scene_split.json
+diffusion:
+  prediction_type: sample
+model:
+  use_explicit_tx_condition: true
+  use_tx_source_supervision: true
+t1_train:
+  max_steps: 10000
+  per_gpu_batch_size: 64
+  gradient_accumulation_steps: 1
+  effective_global_batch_size: 256
+  mixed_precision: bf16
+  gradient_checkpointing: false
+  validation_first_step: 10000
+pipeline:
+  output_root: runs/tx_prior
+  allowed_physical_gpus: [4, 5, 6, 7]
+  allow_gpu_co_tenancy: false
+  wait_for_gpus: false
+  lock_file: runs/tx_prior/.pipeline.lock
+  default_through: t1_validation
+evaluation:
+  subset_manifest: /data_p6/fzj/resources/RMDM/components/manifests/dynamic_sparse_v2_semantic_vehicle/val_subset_v1.json
