@@ -72,9 +72,10 @@ stage directory. Resume with the matching stage's `checkpoints/last.pth`.
 
 `remote.yaml` is the short machine-specific equivalent for the two GPUs and
 paths on `lab_server_137` (batch 64/GPU, accumulation 2, global batch 256). Run
-it with repository root `/data_16T_137/fzj/RMDM/project`; that repository's
-`runs` entry must be deployed so it resolves to the unified results root
-`/data_16T_137/fzj/RMDM/runs`. Resume from the same
+it with repository root `/data_16T_137/fzj/RMDM/project`; deploy only the
+task-level `project/runs/tx_prior` symlink so it resolves to the unified task
+root `/data_16T_137/fzj/RMDM/runs/tx_prior` (leave other `project/runs`
+contents untouched). Resume from the same
 `runs/tx_prior/train/checkpoints/last.pth`; do not create another task or retry
 directory.
 

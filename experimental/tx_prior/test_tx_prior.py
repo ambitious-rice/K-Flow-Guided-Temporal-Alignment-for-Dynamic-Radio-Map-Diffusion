@@ -10,6 +10,7 @@ import torch
 from torch import nn
 
 from experimental.tx_prior.adapter import ScenePriorSystem, scene_prior_batch
+from experimental.tx_prior.checkpoint import restore_cuda_rng
 from experimental.tx_prior.data import (
     deterministic_prior_noise_like,
     make_prior_training_batch,
@@ -17,6 +18,8 @@ from experimental.tx_prior.data import (
 from experimental.tx_prior.runner import (
     allow_incomplete_restart,
     initial_early_stop_state,
+    resolve_task_root,
+    resume_microbatch_offset,
     update_early_stop_state,
     validation_due,
     validation_result_path,
@@ -151,9 +154,11 @@ def test_configs_keep_single_output_and_formal_machine_paths():
     directory = Path(__file__).parent
     formal = yaml.safe_load((directory / "train.yaml").read_text(encoding="utf-8"))
     smoke = yaml.safe_load((directory / "smoke.yaml").read_text(encoding="utf-8"))
+    remote = yaml.safe_load((directory / "remote.yaml").read_text(encoding="utf-8"))
     assert (
         formal["pipeline"]["output_root"]
         == smoke["pipeline"]["output_root"]
+        == remote["pipeline"]["output_root"]
         == "runs/tx_prior"
     )
     assert formal["pipeline"]["allowed_physical_gpus"] == [4, 5, 6, 7]
@@ -161,9 +166,17 @@ def test_configs_keep_single_output_and_formal_machine_paths():
     assert formal["t1_train"]["validation_every_steps"] == 5_000
     assert formal["t1_train"]["early_stop_min_step"] == 25_000
     assert formal["t1_train"]["patience_validations"] == 2
-    assert Path(formal["data"]["root"]).is_dir()
-    assert Path(formal["data"]["split_file"]).is_file()
-    assert Path(formal["evaluation"]["subset_manifest"]).is_file()
+    assert formal["data"]["root"].startswith("/data_p6/")
+    assert formal["data"]["split_file"].startswith("/data_p6/")
+    assert formal["evaluation"]["subset_manifest"].startswith("/data_p6/")
+    assert remote["data"]["root"].startswith("/data_16T_137/")
+    assert remote["data"]["split_file"].startswith("/data_16T_137/")
+    assert remote["evaluation"]["subset_manifest"].startswith("/data_16T_137/")
+    assert remote["pipeline"]["allowed_physical_gpus"] == [0, 1]
+    assert remote["t1_train"]["per_gpu_batch_size"] == 64
+    assert remote["t1_train"]["gradient_accumulation_steps"] == 2
+    assert remote["t1_train"]["effective_global_batch_size"] == 256
+    assert remote["t1_train"]["max_steps"] == 80_000
 
 
 def test_early_stop_improvement_and_patience_after_minimum_step():
@@ -241,6 +254,107 @@ def test_runner_has_exact_eval_and_stage_output_contracts():
     assert source.index("last_timed_step = global_step", validation_tail) > validation_tail
     assert source.index("data_wait_seconds = 0.0", validation_tail) > validation_tail
     assert source.index("fetch_started = last_time", validation_tail) > validation_tail
+
+
+def test_task_root_allows_only_fixed_lexical_path_and_task_symlink(tmp_path):
+    repository = tmp_path / "project"
+    external = tmp_path / "results" / "tx_prior"
+    (repository / "runs").mkdir(parents=True)
+    external.mkdir(parents=True)
+    (repository / "runs" / "tx_prior").symlink_to(external, target_is_directory=True)
+    assert resolve_task_root(repository, "runs/tx_prior") == external.resolve()
+    for invalid in ("runs/other", "../runs/tx_prior", str(external)):
+        with pytest.raises(ValueError, match="exactly runs/tx_prior"):
+            resolve_task_root(repository, invalid)
+
+
+def test_resume_cursor_converts_four_gpu_accum1_to_two_gpu_accum2_exactly():
+    class Train:
+        per_gpu_batch_size = 64
+        gradient_accumulation_steps = 2
+        effective_global_batch_size = 256
+
+    class Pipeline:
+        allowed_physical_gpus = [0, 1]
+
+    class Config:
+        t1_train = Train()
+        pipeline = Pipeline()
+
+    payload = {
+        "microbatches_consumed_in_epoch": 1798,
+        "resolved_config": {
+            "t1_train": {
+                "per_gpu_batch_size": 64,
+                "gradient_accumulation_steps": 1,
+                "effective_global_batch_size": 256,
+            },
+            "pipeline": {"allowed_physical_gpus": [4, 5, 6, 7]},
+        },
+    }
+    assert resume_microbatch_offset(payload, Config()) == 3596
+
+
+def test_resume_cursor_rejects_global_batch_change_or_inexact_cursor():
+    class Train:
+        per_gpu_batch_size = 48
+        gradient_accumulation_steps = 2
+        effective_global_batch_size = 192
+
+    class Pipeline:
+        allowed_physical_gpus = [0, 1]
+
+    class Config:
+        t1_train = Train()
+        pipeline = Pipeline()
+
+    payload = {
+        "microbatches_consumed_in_epoch": 1,
+        "resolved_config": {
+            "t1_train": {
+                "per_gpu_batch_size": 64,
+                "gradient_accumulation_steps": 1,
+                "effective_global_batch_size": 256,
+            },
+            "pipeline": {"allowed_physical_gpus": [4, 5, 6, 7]},
+        },
+    }
+    with pytest.raises(ValueError, match="effective global batch"):
+        resume_microbatch_offset(payload, Config())
+
+
+def test_cuda_rng_restore_is_full_only_when_visible_device_counts_match(monkeypatch):
+    calls = []
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "device_count", lambda: 2)
+    monkeypatch.setattr(torch.cuda, "set_rng_state_all", lambda states: calls.append(("all", len(states))))
+    monkeypatch.setattr(torch.cuda, "set_rng_state", lambda state, device: calls.append(("one", device)))
+    states = [torch.zeros(4, dtype=torch.uint8) for _ in range(2)]
+    result = restore_cuda_rng(states)
+    assert result == {
+        "state": "full",
+        "saved_visible_devices": 2,
+        "current_visible_devices": 2,
+        "restored_devices": 2,
+    }
+    assert calls == [("all", 2)]
+
+
+def test_cuda_rng_restore_marks_cross_world_size_as_partial(monkeypatch):
+    calls = []
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "device_count", lambda: 2)
+    monkeypatch.setattr(torch.cuda, "set_rng_state_all", lambda states: calls.append(("all", len(states))))
+    monkeypatch.setattr(torch.cuda, "set_rng_state", lambda state, device: calls.append(("one", device)))
+    states = [torch.zeros(4, dtype=torch.uint8) for _ in range(4)]
+    result = restore_cuda_rng(states)
+    assert result == {
+        "state": "partial_due_to_world_size_change",
+        "saved_visible_devices": 4,
+        "current_visible_devices": 2,
+        "restored_devices": 2,
+    }
+    assert calls == [("one", 0), ("one", 1)]
 
 
 def test_incomplete_restart_accepts_only_step_zero_without_checkpoint(tmp_path):

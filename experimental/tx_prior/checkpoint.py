@@ -13,6 +13,34 @@ import torch
 SCHEMA = "tx_prior_w1_checkpoint_v1"
 
 
+def restore_cuda_rng(states: list[torch.Tensor]) -> dict[str, Any]:
+    """Restore representable CUDA RNG states and report cross-world-size loss."""
+    saved_count = len(states)
+    if not torch.cuda.is_available():
+        return {
+            "state": "skipped_no_cuda",
+            "saved_visible_devices": saved_count,
+            "current_visible_devices": 0,
+            "restored_devices": 0,
+        }
+    current_count = torch.cuda.device_count()
+    if saved_count == current_count:
+        torch.cuda.set_rng_state_all(states)
+        state = "full"
+        restored = current_count
+    else:
+        restored = min(saved_count, current_count)
+        for device, rng_state in enumerate(states[:restored]):
+            torch.cuda.set_rng_state(rng_state, device)
+        state = "partial_due_to_world_size_change"
+    return {
+        "state": state,
+        "saved_visible_devices": saved_count,
+        "current_visible_devices": current_count,
+        "restored_devices": restored,
+    }
+
+
 def save(
     accelerator: Any,
     path: Path,
@@ -65,6 +93,5 @@ def load(
     random.setstate(rng["python"])
     np.random.set_state(rng["numpy"])
     torch.set_rng_state(rng["torch"])
-    if torch.cuda.is_available() and rng["cuda"]:
-        torch.cuda.set_rng_state_all(rng["cuda"])
+    payload["cuda_rng_restore"] = restore_cuda_rng(list(rng["cuda"]))
     return payload

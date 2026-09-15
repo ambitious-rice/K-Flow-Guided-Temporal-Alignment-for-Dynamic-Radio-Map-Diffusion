@@ -85,6 +85,58 @@ def write_step_validation(path: Path, result: dict[str, Any], step: int) -> None
     write_json_atomic(path, {**result, "global_step": step})
 
 
+def resolve_task_root(repository_root: Path, output_root: str) -> Path:
+    """Keep the configured path fixed while permitting a task-level symlink."""
+    root = repository_root.expanduser().resolve()
+    configured = Path(output_root)
+    if configured.is_absolute() or configured.parts != ("runs", "tx_prior"):
+        raise ValueError("tx_prior task root must be exactly runs/tx_prior")
+    return (root / "runs" / "tx_prior").resolve()
+
+
+def resume_microbatch_offset(payload: dict[str, Any], config: Any) -> int:
+    """Convert a saved data cursor exactly across DDP/accumulation profiles."""
+    resolved = payload.get("resolved_config")
+    if not isinstance(resolved, dict):
+        raise ValueError("tx_prior checkpoint misses resolved_config")
+    source_train = resolved.get("t1_train", {})
+    source_pipeline = resolved.get("pipeline", {})
+    source_gpus = source_pipeline.get("allowed_physical_gpus", [])
+    try:
+        source_world = len(source_gpus)
+        source_batch = int(source_train["per_gpu_batch_size"])
+        source_accumulation = int(source_train["gradient_accumulation_steps"])
+        source_global = int(source_train["effective_global_batch_size"])
+        saved_offset = int(payload["microbatches_consumed_in_epoch"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("checkpoint lacks a valid source execution profile") from error
+    target_world = len(config.pipeline.allowed_physical_gpus)
+    target_batch = int(config.t1_train.per_gpu_batch_size)
+    target_accumulation = int(config.t1_train.gradient_accumulation_steps)
+    target_global = int(config.t1_train.effective_global_batch_size)
+    if min(source_world, source_batch, source_accumulation, target_world,
+           target_batch, target_accumulation) <= 0:
+        raise ValueError("checkpoint or target execution profile is invalid")
+    if source_world * source_batch * source_accumulation != source_global:
+        raise ValueError("checkpoint source execution profile is inconsistent")
+    if target_world * target_batch * target_accumulation != target_global:
+        raise ValueError("target execution profile is inconsistent")
+    if source_global != target_global:
+        raise ValueError("resume would change effective global batch size")
+    if saved_offset < 0 or saved_offset % source_accumulation:
+        raise ValueError("checkpoint cursor is not at an optimizer-step boundary")
+    samples = saved_offset * source_world * source_batch
+    target_microbatch = target_world * target_batch
+    if samples % target_microbatch:
+        raise ValueError(
+            "checkpoint data cursor cannot be represented exactly by target global microbatch"
+        )
+    converted = samples // target_microbatch
+    if converted % target_accumulation:
+        raise ValueError("converted cursor is not at an optimizer-step boundary")
+    return converted
+
+
 class _PriorBatchPolicy:
     """Training-step compatibility adapter; it never samples locations."""
 
@@ -196,9 +248,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
         smoke: bool = False, smoke_limit: int = 0,
         restart_incomplete: bool = False, packed_root: str = "") -> None:
     root = repository_root.resolve()
-    task_root = (root / config.pipeline.output_root).resolve()
-    if not task_root.is_relative_to(root) or task_root != (root / "runs/tx_prior").resolve():
-        raise ValueError("tx_prior task root must be exactly runs/tx_prior")
+    task_root = resolve_task_root(root, config.pipeline.output_root)
     output = task_root / ("smoke" if smoke else "train")
     if restart_incomplete and resume_from:
         raise ValueError("restart_incomplete cannot be combined with resume_from")
@@ -243,8 +293,8 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
     payload: dict[str, Any] | None = None
     if resume_from:
         payload = load(resume_from, model, optimizer, scheduler)
-        global_step, epoch, offset = (int(payload[key]) for key in
-                                      ("global_step", "epoch", "microbatches_consumed_in_epoch"))
+        global_step, epoch = (int(payload[key]) for key in ("global_step", "epoch"))
+        offset = resume_microbatch_offset(payload, config)
     early_stop = initial_early_stop_state(payload)
     model, optimizer, loader = prepare_model_optimizer_loader(accelerator, model, optimizer, loader)
     require_scheduler_global_step(scheduler, global_step)
@@ -265,6 +315,9 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
             "data_backend": "packed" if packed_root else "legacy",
             "packed_root": packed_root,
             "validation_metric": "full_image.nmse",
+            "cuda_rng_restore": (
+                payload.get("cuda_rng_restore") if payload is not None else None
+            ),
         }
         write_json_atomic(
             output / "status.json",
