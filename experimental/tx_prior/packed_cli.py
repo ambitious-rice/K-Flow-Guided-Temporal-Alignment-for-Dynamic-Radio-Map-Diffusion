@@ -50,7 +50,14 @@ def main() -> None:
     else:
         remove_cache(args.root, confirm=args.confirm)
         result = {"state": "removed", "root": str(args.root)}
-    print(json.dumps(result, indent=2))
+    # The manifest contains all 10,500 record mappings. Keep routine build and
+    # inspect output concise; the complete mapping remains in manifest.json.
+    printable = (
+        {key: value for key, value in result.items() if key != "records"}
+        if isinstance(result, dict)
+        else result
+    )
+    print(json.dumps(printable, indent=2))
 
 
 if __name__ == "__main__":
