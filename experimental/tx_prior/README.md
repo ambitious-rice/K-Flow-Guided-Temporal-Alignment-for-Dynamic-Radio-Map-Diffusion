@@ -83,8 +83,8 @@ Raw data remains the source of truth on the `/data_p6` mechanical array. The
 packed cache is a derived, disposable artifact under `/home/fzj` on the root
 NVMe filesystem. Its fixed recommended location is
 `/home/fzj/.cache/rmdm/tx_prior`; an incomplete build is never accepted by the
-reader. `train.yaml` intentionally remains on the legacy backend while the
-current training is running.
+reader. `train.yaml` intentionally keeps the legacy backend as its default;
+switching always requires an explicit `--packed-root`.
 
 Build and verify only when source-disk contention is acceptable:
 
