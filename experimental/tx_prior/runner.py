@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from datetime import datetime
 from pathlib import Path
@@ -50,6 +51,24 @@ def _distributed_max(accelerator: Any, value: torch.Tensor) -> torch.Tensor:
     if accelerator.num_processes > 1:
         dist.all_reduce(result, op=dist.ReduceOp.MAX)
     return result
+
+
+def allow_incomplete_restart(output: Path) -> tuple[bool, str]:
+    """Validate the only checkpoint-free in-place restart state."""
+
+    if not output.exists() or not any(output.iterdir()):
+        return False, "stage output is empty; start normally"
+    if (output / "checkpoints/last.pth").exists():
+        return False, "stage has a checkpoint; use --resume-from"
+    try:
+        status = json.loads((output / "status.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        return False, f"status.json is not readable: {error}"
+    if status.get("global_step") != 0:
+        return False, "checkpoint-free restart requires global_step == 0"
+    if status.get("state") not in {"training", "failed"}:
+        return False, "checkpoint-free restart requires training or failed state"
+    return True, "eligible checkpoint-free step-0 restart"
 
 
 def _dataset(
@@ -113,21 +132,29 @@ def validate_prior(accelerator: Any, model: Any, config: Any) -> dict[str, Any]:
 
 
 def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: str = "",
-        smoke: bool = False, smoke_limit: int = 0) -> None:
+        smoke: bool = False, smoke_limit: int = 0,
+        restart_incomplete: bool = False) -> None:
     root = repository_root.resolve()
     task_root = (root / config.pipeline.output_root).resolve()
     if not task_root.is_relative_to(root) or task_root != (root / "runs/tx_prior").resolve():
         raise ValueError("tx_prior task root must be exactly runs/tx_prior")
     output = task_root / ("smoke" if smoke else "train")
+    if restart_incomplete and resume_from:
+        raise ValueError("restart_incomplete cannot be combined with resume_from")
     if resume_from:
         resolved_resume = Path(resume_from).expanduser().resolve()
         if resolved_resume.parent != (output / "checkpoints").resolve():
             raise ValueError("resume checkpoint must belong to the selected tx_prior stage")
     require_visible_physical_gpus(list(config.pipeline.allowed_physical_gpus))
     train = config.t1_train
-    if not resume_from and output.exists() and any(output.iterdir()):
+    if restart_incomplete:
+        allowed, reason = allow_incomplete_restart(output)
+        if not allowed:
+            raise RuntimeError(f"cannot restart incomplete tx_prior stage: {reason}")
+    elif not resume_from and output.exists() and any(output.iterdir()):
         raise FileExistsError(
-            f"refusing to overwrite existing tx_prior output {output}; use --resume-from"
+            f"refusing to overwrite existing tx_prior output {output}; use --resume-from "
+            "or the narrowly scoped --restart-incomplete"
         )
     accelerator = make_accelerator(mixed_precision=train.mixed_precision,
         gradient_accumulation_steps=train.gradient_accumulation_steps, data_seed=train.seed)
@@ -184,6 +211,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                 "event": "start_or_resume",
                 "global_step": global_step,
                 "resume_from": resume_from,
+                "restart_incomplete": restart_incomplete,
                 **status_context,
             },
         )

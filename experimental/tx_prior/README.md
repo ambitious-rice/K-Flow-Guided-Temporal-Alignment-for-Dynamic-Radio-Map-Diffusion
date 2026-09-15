@@ -17,6 +17,24 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
   --smoke --smoke-data-limit 512
 ```
 
+The production environment on this machine uses `torch==2.11.0+cu128` and
+`natten==0.21.6+torch2110cu128`.
+
+If smoke stopped at step 0 before writing a checkpoint, restart it in place:
+
+```bash
+CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
+  /data_p6/fzj/conda/envs/RMDM/bin/python -m accelerate.commands.launch \
+  --multi_gpu --num_processes 4 --main_process_port 29641 \
+  -m experimental.tx_prior.train --config experimental/tx_prior/smoke.yaml \
+  --smoke --smoke-data-limit 512 --restart-incomplete
+```
+
+This restart is accepted only when `status.json` is readable, its state is
+`training` or `failed`, `global_step` is zero, and no `checkpoints/last.pth`
+exists. Existing status and history records are retained, and a new history
+event is appended.
+
 Formal training is also explicit:
 
 ```bash

@@ -8,6 +8,7 @@ from torch import nn
 
 from experimental.tx_prior.adapter import ScenePriorSystem, scene_prior_batch
 from experimental.tx_prior.data import deterministic_prior_noise_like, make_prior_training_batch
+from experimental.tx_prior.runner import allow_incomplete_restart
 
 
 class FakeHWM(nn.Module):
@@ -129,3 +130,25 @@ def test_runner_has_exact_eval_and_stage_output_contracts():
     assert '"smoke" if smoke else "train"' in source
     assert 'expected_frames = len(video_ids) * config.data.frames_per_video' in source
     assert 'epoch_dataset = dataset.dataset if isinstance(dataset, Subset) else dataset' in source
+
+
+def test_incomplete_restart_accepts_only_step_zero_without_checkpoint(tmp_path):
+    stage = tmp_path / "smoke"
+    stage.mkdir()
+    assert allow_incomplete_restart(stage)[0] is False
+    (stage / "history.jsonl").write_text("{}\n", encoding="utf-8")
+    (stage / "status.json").write_text(
+        '{"state":"failed","global_step":0}\n', encoding="utf-8"
+    )
+    assert allow_incomplete_restart(stage)[0] is True
+    (stage / "status.json").write_text(
+        '{"state":"failed","global_step":1}\n', encoding="utf-8"
+    )
+    assert allow_incomplete_restart(stage)[0] is False
+    (stage / "status.json").write_text(
+        '{"state":"training","global_step":0}\n', encoding="utf-8"
+    )
+    checkpoint = stage / "checkpoints/last.pth"
+    checkpoint.parent.mkdir()
+    checkpoint.touch()
+    assert allow_incomplete_restart(stage)[0] is False
