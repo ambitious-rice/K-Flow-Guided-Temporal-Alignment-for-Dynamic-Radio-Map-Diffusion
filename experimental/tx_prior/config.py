@@ -23,6 +23,12 @@ def load_config(path: str | Path, *, smoke: bool) -> ExperimentConfig:
     expected = len(config.pipeline.allowed_physical_gpus) * train.per_gpu_batch_size * train.gradient_accumulation_steps
     if expected != train.effective_global_batch_size:
         raise ValueError(f"effective global batch is {expected}, configured {train.effective_global_batch_size}")
+    if train.validation_every_steps <= 0:
+        raise ValueError("validation_every_steps must be positive")
+    if train.early_stop_min_step < train.validation_first_step:
+        raise ValueError("early_stop_min_step must not precede first validation")
+    if train.patience_validations <= 0:
+        raise ValueError("patience_validations must be positive")
     if config.pipeline.output_root != "runs/tx_prior":
         raise ValueError("tx_prior output_root must remain runs/tx_prior")
     if smoke and train.max_steps > 2:

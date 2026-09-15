@@ -14,7 +14,14 @@ from experimental.tx_prior.data import (
     deterministic_prior_noise_like,
     make_prior_training_batch,
 )
-from experimental.tx_prior.runner import allow_incomplete_restart
+from experimental.tx_prior.runner import (
+    allow_incomplete_restart,
+    initial_early_stop_state,
+    update_early_stop_state,
+    validation_due,
+    validation_result_path,
+    write_step_validation,
+)
 from experimental.tx_prior.packed import (
     FORMAT,
     MARKER,
@@ -150,10 +157,68 @@ def test_configs_keep_single_output_and_formal_machine_paths():
         == "runs/tx_prior"
     )
     assert formal["pipeline"]["allowed_physical_gpus"] == [4, 5, 6, 7]
-    assert formal["t1_train"]["max_steps"] == 10_000
+    assert formal["t1_train"]["max_steps"] == 80_000
+    assert formal["t1_train"]["validation_every_steps"] == 5_000
+    assert formal["t1_train"]["early_stop_min_step"] == 25_000
+    assert formal["t1_train"]["patience_validations"] == 2
     assert Path(formal["data"]["root"]).is_dir()
     assert Path(formal["data"]["split_file"]).is_file()
     assert Path(formal["evaluation"]["subset_manifest"]).is_file()
+
+
+def test_early_stop_improvement_and_patience_after_minimum_step():
+    class Train:
+        max_steps = 80_000
+        validation_first_step = 10_000
+        validation_every_steps = 5_000
+        early_stop_min_step = 25_000
+        patience_validations = 2
+
+    state = initial_early_stop_state()
+    assert update_early_stop_state(
+        state, score=0.4, step=10_000, early_stop_min_step=25_000
+    )
+    assert state == {"best_score": 0.4, "best_step": 10_000, "stale_validations": 0}
+    assert not update_early_stop_state(
+        state, score=0.5, step=15_000, early_stop_min_step=25_000
+    )
+    assert not update_early_stop_state(
+        state, score=0.4, step=20_000, early_stop_min_step=25_000
+    )
+    assert state["stale_validations"] == 0
+    assert not (20_000 >= Train.early_stop_min_step)
+    assert not update_early_stop_state(
+        state, score=0.45, step=25_000, early_stop_min_step=25_000
+    )
+    assert state["stale_validations"] == 1
+    assert not update_early_stop_state(
+        state, score=0.45, step=30_000, early_stop_min_step=25_000
+    )
+    assert state["stale_validations"] == 2
+    assert validation_due(Train, 10_000)
+    assert validation_due(Train, 25_000)
+    assert validation_due(Train, 80_000)
+    assert not validation_due(Train, 12_000)
+
+
+def test_old_checkpoint_early_stop_state_is_safe_and_new_state_restores():
+    assert initial_early_stop_state({"schema": "tx_prior_w1_checkpoint_v1"}) == {
+        "best_score": float("inf"), "best_step": 0, "stale_validations": 0
+    }
+    payload = {"early_stop": {"best_score": 0.25, "best_step": 15_000,
+                               "stale_validations": 1}}
+    assert initial_early_stop_state(payload) == payload["early_stop"]
+
+
+def test_step_validation_path_and_foreign_step_protection(tmp_path):
+    path = validation_result_path(tmp_path, 10_000)
+    assert path.name == "step_010000.json"
+    write_step_validation(path, {"metrics": {"full_image": {"nmse": 0.3}}}, 10_000)
+    assert json.loads(path.read_text())["global_step"] == 10_000
+    write_step_validation(path, {"metrics": {"full_image": {"nmse": 0.2}}}, 10_000)
+    path.write_text('{"global_step":15000}\n', encoding="utf-8")
+    with pytest.raises(RuntimeError, match="step mismatch"):
+        write_step_validation(path, {}, 10_000)
 
 
 def test_runner_has_exact_eval_and_stage_output_contracts():
@@ -171,6 +236,11 @@ def test_runner_has_exact_eval_and_stage_output_contracts():
         "                fetch_started = time.perf_counter()\n"
         "                continue"
     ) in source
+    validation_tail = source.index("# Validation and checkpoint I/O")
+    assert source.index("last_time = time.perf_counter()", validation_tail) > validation_tail
+    assert source.index("last_timed_step = global_step", validation_tail) > validation_tail
+    assert source.index("data_wait_seconds = 0.0", validation_tail) > validation_tail
+    assert source.index("fetch_started = last_time", validation_tail) > validation_tail
 
 
 def test_incomplete_restart_accepts_only_step_zero_without_checkpoint(tmp_path):

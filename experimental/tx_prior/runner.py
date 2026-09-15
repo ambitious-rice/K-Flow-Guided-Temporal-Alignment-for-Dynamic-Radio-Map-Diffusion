@@ -37,6 +37,54 @@ from .data import deterministic_prior_noise_like, make_prior_training_batch
 from .packed import PackedFrameReader
 
 
+def validation_due(train: Any, step: int) -> bool:
+    return step == train.max_steps or (
+        step >= train.validation_first_step
+        and (step - train.validation_first_step) % train.validation_every_steps == 0
+    )
+
+
+def initial_early_stop_state(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Read early-stop progress, safely accepting the original checkpoints."""
+    saved = (payload or {}).get("early_stop")
+    if not isinstance(saved, dict):
+        return {"best_score": float("inf"), "best_step": 0, "stale_validations": 0}
+    return {
+        "best_score": float(saved.get("best_score", float("inf"))),
+        "best_step": int(saved.get("best_step", 0)),
+        "stale_validations": int(saved.get("stale_validations", 0)),
+    }
+
+
+def update_early_stop_state(
+    state: dict[str, Any], *, score: float, step: int, early_stop_min_step: int
+) -> bool:
+    improved = score < float(state["best_score"])
+    if improved:
+        state.update(best_score=float(score), best_step=int(step), stale_validations=0)
+    elif step >= early_stop_min_step:
+        state["stale_validations"] = int(state["stale_validations"]) + 1
+    else:
+        state["stale_validations"] = 0
+    return improved
+
+
+def validation_result_path(output: Path, step: int) -> Path:
+    return output / "validation" / f"step_{step:06d}.json"
+
+
+def write_step_validation(path: Path, result: dict[str, Any], step: int) -> None:
+    """Write a step result without clobbering a foreign-step record."""
+    if path.exists():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise RuntimeError(f"existing validation result is unreadable: {path}") from error
+        if existing.get("global_step") != step:
+            raise RuntimeError(f"validation result step mismatch at {path}")
+    write_json_atomic(path, {**result, "global_step": step})
+
+
 class _PriorBatchPolicy:
     """Training-step compatibility adapter; it never samples locations."""
 
@@ -192,16 +240,19 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
         warmup_steps=train.warmup_steps, base_learning_rate=train.learning_rate,
         min_learning_rate=train.min_learning_rate)
     global_step = epoch = offset = 0
+    payload: dict[str, Any] | None = None
     if resume_from:
         payload = load(resume_from, model, optimizer, scheduler)
         global_step, epoch, offset = (int(payload[key]) for key in
                                       ("global_step", "epoch", "microbatches_consumed_in_epoch"))
+    early_stop = initial_early_stop_state(payload)
     model, optimizer, loader = prepare_model_optimizer_loader(accelerator, model, optimizer, loader)
     require_scheduler_global_step(scheduler, global_step)
     diffusion = DiffusionProcess(config.diffusion)
     policy = _PriorBatchPolicy()
     stage = "smoke" if smoke else "train"
     checkpoint_path = output / "checkpoints/last.pth"
+    best_path = output / "checkpoints/best.pth"
     if accelerator.is_main_process:
         status_context = {
             "stage": stage,
@@ -213,6 +264,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
             "checkpoint": str(checkpoint_path),
             "data_backend": "packed" if packed_root else "legacy",
             "packed_root": packed_root,
+            "validation_metric": "full_image.nmse",
         }
         write_json_atomic(
             output / "status.json",
@@ -242,7 +294,74 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
     last_timed_step = global_step
     data_wait_seconds = 0.0
     fetch_started = time.perf_counter()
-    while global_step < train.max_steps:
+    last_microbatches_consumed = offset
+
+    def complete_validation(*, reuse_existing: bool = False) -> None:
+        nonlocal last_time, last_timed_step, data_wait_seconds, fetch_started
+        result_path = validation_result_path(output, global_step)
+        validation = None
+        if reuse_existing and result_path.exists():
+            validation = json.loads(result_path.read_text(encoding="utf-8"))
+            if validation.get("global_step") != global_step:
+                raise RuntimeError(f"validation result step mismatch at {result_path}")
+        if validation is None:
+            validation = validate_prior(accelerator, model, config)
+        score = float(validation["metrics"]["full_image"]["nmse"])
+        improved = update_early_stop_state(
+            early_stop,
+            score=score,
+            step=global_step,
+            early_stop_min_step=train.early_stop_min_step,
+        )
+        if accelerator.is_main_process:
+            write_step_validation(result_path, validation, global_step)
+            write_json_atomic(
+                output / "validation/prior.json", {**validation, "global_step": global_step}
+            )
+        if improved:
+            save(accelerator, best_path, model, optimizer, scheduler, config,
+                global_step=global_step, epoch=epoch,
+                microbatches_consumed_in_epoch=last_microbatches_consumed,
+                early_stop=early_stop, validation_pending=False)
+        save(accelerator, checkpoint_path, model, optimizer, scheduler, config,
+            global_step=global_step, epoch=epoch,
+            microbatches_consumed_in_epoch=last_microbatches_consumed,
+            early_stop=early_stop, validation_pending=False)
+        if accelerator.is_main_process:
+            append_jsonl(output / "history.jsonl", {
+                "event": "validation", "global_step": global_step, "score": score,
+                "metric": "full_image.nmse", **early_stop,
+            })
+        # Validation and checkpoint I/O are not training throughput. Start the
+        # next logging window only after every rank has completed both.
+        accelerator.wait_for_everyone()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        last_time = time.perf_counter()
+        last_timed_step = global_step
+        data_wait_seconds = 0.0
+        fetch_started = last_time
+
+    if (
+        not smoke
+        and validation_due(train, global_step)
+        and (
+            payload is None
+            or "early_stop" not in payload
+            or bool(payload.get("validation_pending", False))
+        )
+    ):
+        save(accelerator, checkpoint_path, model, optimizer, scheduler, config,
+            global_step=global_step, epoch=epoch,
+            microbatches_consumed_in_epoch=last_microbatches_consumed,
+            early_stop=early_stop, validation_pending=True)
+        complete_validation(reuse_existing=True)
+
+    stop_early = (
+        global_step >= train.early_stop_min_step
+        and early_stop["stale_validations"] >= train.patience_validations
+    )
+    while global_step < train.max_steps and not stop_early:
         epoch_dataset = dataset.dataset if isinstance(dataset, Subset) else dataset
         epoch_dataset.set_epoch(epoch)
         if hasattr(loader, "set_epoch"):
@@ -253,6 +372,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
             if batch_index < offset:
                 fetch_started = time.perf_counter()
                 continue
+            last_microbatches_consumed = batch_index + 1
             with accelerator.accumulate(model):
                 with accelerator.autocast():
                     result = training_step(model, dense, policy, diffusion, training_seed=train.seed,
@@ -316,29 +436,36 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                         },
                     )
                 data_wait_seconds = 0.0
-            if global_step % train.checkpoint_every_steps == 0 or global_step == train.max_steps:
+            if not smoke and validation_due(train, global_step):
                 save(accelerator, checkpoint_path, model, optimizer, scheduler, config,
                     global_step=global_step, epoch=epoch,
-                    microbatches_consumed_in_epoch=batch_index + 1)
-            if global_step >= train.max_steps:
+                    microbatches_consumed_in_epoch=last_microbatches_consumed,
+                    early_stop=early_stop, validation_pending=True)
+                complete_validation()
+                stop_early = (
+                    global_step >= train.early_stop_min_step
+                    and early_stop["stale_validations"] >= train.patience_validations
+                )
+            elif global_step % train.checkpoint_every_steps == 0 or global_step == train.max_steps:
+                save(accelerator, checkpoint_path, model, optimizer, scheduler, config,
+                    global_step=global_step, epoch=epoch,
+                    microbatches_consumed_in_epoch=last_microbatches_consumed,
+                    early_stop=early_stop, validation_pending=False)
+            if global_step >= train.max_steps or stop_early:
                 break
             fetch_started = time.perf_counter()
         epoch += 1
         offset = 0
-    validation = None
-    if train.max_steps > 2 and global_step >= train.validation_first_step:
-        validation = validate_prior(accelerator, model, config)
-        if accelerator.is_main_process:
-            write_json_atomic(output / "validation/prior.json", validation)
-        save(accelerator, output / "checkpoints/best.pth", model, optimizer, scheduler, config,
-            global_step=global_step, epoch=epoch, microbatches_consumed_in_epoch=0)
+    final_state = "early_stopped" if stop_early and global_step < train.max_steps else "complete"
     if accelerator.is_main_process:
         completed_at = datetime.now().astimezone().isoformat()
         append_jsonl(
             output / "history.jsonl",
             {
-                "event": "complete",
+                "event": final_state,
                 "global_step": global_step,
+                "stop_step": global_step,
+                **early_stop,
                 "completed_at": completed_at,
                 **status_context,
             },
@@ -346,10 +473,11 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
         write_json_atomic(
             output / "status.json",
             {
-                "state": "complete",
+                "state": final_state,
                 "global_step": global_step,
+                "stop_step": global_step,
                 "completed_at": completed_at,
-                "validation": validation["metrics"] if validation else None,
+                **early_stop,
                 **status_context,
             },
         )

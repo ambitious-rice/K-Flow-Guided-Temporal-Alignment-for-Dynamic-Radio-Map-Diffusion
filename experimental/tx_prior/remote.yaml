@@ -1,7 +1,6 @@
 data:
-  # Backend remains legacy unless train.py is explicitly passed --packed-root.
-  root: /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
-  split_file: /data_p6/fzj/resources/RMDM/components/dataset_metadata/multi20_formal_scene_split.json
+  root: /data_16T_137/fzj/RMDM/resources/datasets/M20_Formal075_RadioMapSeerPack
+  split_file: /data_16T_137/fzj/RMDM/resources/components/dataset_metadata/multi20_formal_scene_split.json
 diffusion:
   prediction_type: sample
 model:
@@ -10,7 +9,7 @@ model:
 t1_train:
   max_steps: 80000
   per_gpu_batch_size: 64
-  gradient_accumulation_steps: 1
+  gradient_accumulation_steps: 2
   effective_global_batch_size: 256
   mixed_precision: bf16
   gradient_checkpointing: false
@@ -20,10 +19,10 @@ t1_train:
   patience_validations: 2
 pipeline:
   output_root: runs/tx_prior
-  allowed_physical_gpus: [4, 5, 6, 7]
+  allowed_physical_gpus: [0, 1]
   allow_gpu_co_tenancy: false
   wait_for_gpus: false
   lock_file: runs/tx_prior/.pipeline.lock
   default_through: t1_validation
 evaluation:
-  subset_manifest: /data_p6/fzj/resources/RMDM/components/manifests/dynamic_sparse_v2_semantic_vehicle/val_subset_v1.json
+  subset_manifest: /data_16T_137/fzj/RMDM/resources/components/manifests/dynamic_sparse_v2_semantic_vehicle/val_subset_v1.json

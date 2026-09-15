@@ -58,19 +58,25 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
   --resume-from runs/tx_prior/train/checkpoints/last.pth
 ```
 
-The full configuration is `train.yaml`, fixed to GPUs 4-7, batch 64/GPU,
+The full local configuration is `train.yaml`, fixed to GPUs 4-7, batch 64/GPU,
 accumulation 1, global batch 256, BF16, no gradient checkpointing, and
-`runs/tx_prior`. The local runner calls `build_scene_prior_system` and never
-constructs sparse observations.
+`runs/tx_prior`. It runs through at most 80k, validates first at 10k and every
+5k thereafter. Non-improvements before 25k do not consume patience; starting
+at 25k, two consecutive validations without a lower `full_image.nmse` stop the
+run. The local runner calls
+`build_scene_prior_system` and never constructs sparse observations.
 
 Outputs remain under one task root: smoke uses `runs/tx_prior/smoke`, and formal
 training uses `runs/tx_prior/train`. Fresh runs refuse only a non-empty matching
 stage directory. Resume with the matching stage's `checkpoints/last.pth`.
 
-After the 10k evaluation, if training should continue, edit `max_steps` in the
-same `train.yaml` and resume from `runs/tx_prior/train/checkpoints/last.pth`.
-Do not create another configuration, task directory, retry directory, or
-versioned run directory for that continuation.
+`remote.yaml` is the short machine-specific equivalent for the two GPUs and
+paths on `lab_server_137` (batch 64/GPU, accumulation 2, global batch 256). Run
+it with repository root `/data_16T_137/fzj/RMDM/project`; that repository's
+`runs` entry must be deployed so it resolves to the unified results root
+`/data_16T_137/fzj/RMDM/runs`. Resume from the same
+`runs/tx_prior/train/checkpoints/last.pth`; do not create another task or retry
+directory.
 
 Training code must call `make_prior_training_batch` directly on the dense
 dataset batch and must not instantiate `SamplingPolicy`. Prior evaluation uses
