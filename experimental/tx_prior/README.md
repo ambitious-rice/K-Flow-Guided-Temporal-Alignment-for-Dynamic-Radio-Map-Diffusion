@@ -76,3 +76,38 @@ Training code must call `make_prior_training_batch` directly on the dense
 dataset batch and must not instantiate `SamplingPolicy`. Prior evaluation uses
 `deterministic_prior_noise_like`, whose seed depends only on frame identity and
 the experiment seed (there is intentionally no observation-rate argument).
+
+## Disposable packed cache
+
+Raw data remains the source of truth on the `/data_p6` mechanical array. The
+packed cache is a derived, disposable artifact under `/home/fzj` on the root
+NVMe filesystem. Its fixed recommended location is
+`/home/fzj/.cache/rmdm/tx_prior`; an incomplete build is never accepted by the
+reader. `train.yaml` intentionally remains on the legacy backend while the
+current training is running.
+
+Build and verify only when source-disk contention is acceptable:
+
+```bash
+PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
+  -m experimental.tx_prior.packed_cli build \
+  --source-root /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack \
+  --split-file /data_p6/fzj/resources/RMDM/components/dataset_metadata/multi20_formal_scene_split.json
+PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
+  -m experimental.tx_prior.packed_cli verify \
+  --source-root /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack \
+  --split-file /data_p6/fzj/resources/RMDM/components/dataset_metadata/multi20_formal_scene_split.json
+```
+
+The builder prints a flushed progress line after the first video, every 100
+videos, and completion. Verification first checks the complete legacy video
+order, then compares 64 evenly selected videos at their first, middle, and last
+frames against raw data. It reports `compared_frames` without rereading the
+entire split.
+
+At a checkpoint boundary, add
+`--packed-root /home/fzj/.cache/rmdm/tx_prior` to the same resume
+command. This does not change `WindowDataset` indexing or epoch permutation.
+Remove it only through the marker-checked lifecycle command:
+`PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python -m experimental.tx_prior.packed_cli remove --confirm`.
+It can always be rebuilt from the raw source.

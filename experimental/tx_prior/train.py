@@ -17,6 +17,7 @@ def main() -> None:
     parser.add_argument("--restart-incomplete", action="store_true")
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--smoke-data-limit", type=int, default=0)
+    parser.add_argument("--packed-root", default="")
     args = parser.parse_args()
     if args.restart_incomplete and args.resume_from:
         parser.error("--restart-incomplete cannot be combined with --resume-from")
@@ -34,6 +35,7 @@ def main() -> None:
         smoke=args.smoke,
         smoke_limit=args.smoke_data_limit,
         restart_incomplete=args.restart_incomplete,
+        packed_root=args.packed_root,
     )
 
 

@@ -34,6 +34,7 @@ from rmdm_hvdit_v4_x0.training.step import training_step
 from .adapter import build_scene_prior_system
 from .checkpoint import load, save
 from .data import deterministic_prior_noise_like, make_prior_training_batch
+from .packed import PackedFrameReader
 
 
 class _PriorBatchPolicy:
@@ -77,9 +78,20 @@ def _dataset(
     split: str,
     fixed_starts: tuple[int, ...] | None = None,
     video_ids: list[str] | None = None,
+    packed_root: str = "",
 ) -> WindowDataset:
+    reader = None
+    if packed_root:
+        reader = PackedFrameReader(
+            packed_root,
+            source_root=config.data.root,
+            split_file=config.data.split_file,
+            tx_heatmap_sigma_px=config.data.tx_heatmap_sigma_px,
+            split=split,
+            video_ids=set(video_ids) if video_ids is not None else None,
+        )
     return WindowDataset(
-        root=config.data.root,
+        root=config.data.root if reader is None else None,
         split=split,
         split_file=config.data.split_file,
         window_size=1,
@@ -88,6 +100,7 @@ def _dataset(
         tx_heatmap_sigma_px=config.data.tx_heatmap_sigma_px,
         fixed_starts=fixed_starts,
         video_ids=video_ids,
+        reader=reader,
     )
 
 
@@ -133,7 +146,7 @@ def validate_prior(accelerator: Any, model: Any, config: Any) -> dict[str, Any]:
 
 def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: str = "",
         smoke: bool = False, smoke_limit: int = 0,
-        restart_incomplete: bool = False) -> None:
+        restart_incomplete: bool = False, packed_root: str = "") -> None:
     root = repository_root.resolve()
     task_root = (root / config.pipeline.output_root).resolve()
     if not task_root.is_relative_to(root) or task_root != (root / "runs/tx_prior").resolve():
@@ -162,7 +175,12 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
         raise RuntimeError("DDP world size does not match configured GPUs")
     seed_everything(train.seed)
     model = build_scene_prior_system(config)
-    dataset: Any = _dataset(config, split="train", fixed_starts=tuple(range(config.data.frames_per_video)))
+    dataset: Any = _dataset(
+        config,
+        split="train",
+        fixed_starts=tuple(range(config.data.frames_per_video)),
+        packed_root=packed_root,
+    )
     if smoke_limit:
         dataset = Subset(dataset, range(min(smoke_limit, len(dataset))))
     loader = DataLoader(dataset, batch_size=train.per_gpu_batch_size, shuffle=True,
@@ -193,6 +211,8 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
             "gradient_accumulation_steps": train.gradient_accumulation_steps,
             "effective_global_batch_size": train.effective_global_batch_size,
             "checkpoint": str(checkpoint_path),
+            "data_backend": "packed" if packed_root else "legacy",
+            "packed_root": packed_root,
         }
         write_json_atomic(
             output / "status.json",
@@ -220,6 +240,8 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
         torch.cuda.synchronize()
     last_time = time.perf_counter()
     last_timed_step = global_step
+    data_wait_seconds = 0.0
+    fetch_started = time.perf_counter()
     while global_step < train.max_steps:
         epoch_dataset = dataset.dataset if isinstance(dataset, Subset) else dataset
         epoch_dataset.set_epoch(epoch)
@@ -227,7 +249,9 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
             loader.set_epoch(epoch)
         policy.set_epoch(epoch)
         for batch_index, dense in enumerate(loader):
+            data_wait_seconds += time.perf_counter() - fetch_started
             if batch_index < offset:
+                fetch_started = time.perf_counter()
                 continue
             with accelerator.accumulate(model):
                 with accelerator.autocast():
@@ -241,6 +265,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                 step_scheduler_on_global_update(accelerator, scheduler)
                 optimizer.zero_grad(set_to_none=True)
             if not accelerator.sync_gradients:
+                fetch_started = time.perf_counter()
                 continue
             global_step += 1
             should_log = global_step % train.log_every_steps == 0 or global_step <= 2
@@ -260,6 +285,10 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                 )
                 reduced_losses = accelerator.reduce(losses, reduction="mean")
                 slowest = _distributed_max(accelerator, torch.tensor(elapsed, device=accelerator.device))
+                max_data_wait = _distributed_max(
+                    accelerator,
+                    torch.tensor(data_wait_seconds, device=accelerator.device),
+                )
                 peak_bytes = (
                     float(torch.cuda.max_memory_allocated())
                     if torch.cuda.is_available()
@@ -277,12 +306,23 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                             / max(float(slowest), 1e-9)
                         ),
                         "peak_memory_bytes": int(peak.item()), "learning_rate": optimizer.param_groups[0]["lr"]})
+                    append_jsonl(
+                        output / "loader.jsonl",
+                        {
+                            "global_step": global_step,
+                            "data_wait_seconds": float(max_data_wait),
+                            "data_wait_fraction": float(max_data_wait)
+                            / max(float(slowest), 1.0e-9),
+                        },
+                    )
+                data_wait_seconds = 0.0
             if global_step % train.checkpoint_every_steps == 0 or global_step == train.max_steps:
                 save(accelerator, checkpoint_path, model, optimizer, scheduler, config,
                     global_step=global_step, epoch=epoch,
                     microbatches_consumed_in_epoch=batch_index + 1)
             if global_step >= train.max_steps:
                 break
+            fetch_started = time.perf_counter()
         epoch += 1
         offset = 0
     validation = None

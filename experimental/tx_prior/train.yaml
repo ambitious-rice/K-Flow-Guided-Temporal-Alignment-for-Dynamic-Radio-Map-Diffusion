@@ -1,4 +1,5 @@
 data:
+  # Backend remains legacy unless train.py is explicitly passed --packed-root.
   root: /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
   split_file: /data_p6/fzj/resources/RMDM/components/dataset_metadata/multi20_formal_scene_split.json
 diffusion:
