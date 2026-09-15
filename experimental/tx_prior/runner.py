@@ -313,3 +313,5 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                 **status_context,
             },
         )
+    accelerator.wait_for_everyone()
+    accelerator.end_training()

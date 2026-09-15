@@ -130,6 +130,7 @@ def test_runner_has_exact_eval_and_stage_output_contracts():
     assert '"smoke" if smoke else "train"' in source
     assert 'expected_frames = len(video_ids) * config.data.frames_per_video' in source
     assert 'epoch_dataset = dataset.dataset if isinstance(dataset, Subset) else dataset' in source
+    assert "accelerator.wait_for_everyone()\n    accelerator.end_training()" in source
 
 
 def test_incomplete_restart_accepts_only_step_zero_without_checkpoint(tmp_path):

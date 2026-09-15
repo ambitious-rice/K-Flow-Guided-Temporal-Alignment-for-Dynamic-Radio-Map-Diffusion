@@ -12,7 +12,8 @@ dropout.
 ```bash
 CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
   /data_p6/fzj/conda/envs/RMDM/bin/python -m accelerate.commands.launch \
-  --multi_gpu --num_processes 4 --main_process_port 29641 \
+  --multi_gpu --num_processes 4 --num_machines 1 --mixed_precision bf16 \
+  --dynamo_backend no --main_process_port 29641 \
   -m experimental.tx_prior.train --config experimental/tx_prior/smoke.yaml \
   --smoke --smoke-data-limit 512
 ```
@@ -25,7 +26,8 @@ If smoke stopped at step 0 before writing a checkpoint, restart it in place:
 ```bash
 CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
   /data_p6/fzj/conda/envs/RMDM/bin/python -m accelerate.commands.launch \
-  --multi_gpu --num_processes 4 --main_process_port 29641 \
+  --multi_gpu --num_processes 4 --num_machines 1 --mixed_precision bf16 \
+  --dynamo_backend no --main_process_port 29641 \
   -m experimental.tx_prior.train --config experimental/tx_prior/smoke.yaml \
   --smoke --smoke-data-limit 512 --restart-incomplete
 ```
@@ -40,7 +42,8 @@ Formal training is also explicit:
 ```bash
 CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
   /data_p6/fzj/conda/envs/RMDM/bin/python -m accelerate.commands.launch \
-  --multi_gpu --num_processes 4 --main_process_port 29641 \
+  --multi_gpu --num_processes 4 --num_machines 1 --mixed_precision bf16 \
+  --dynamo_backend no --main_process_port 29641 \
   -m experimental.tx_prior.train --config experimental/tx_prior/train.yaml
 ```
 
@@ -49,7 +52,8 @@ Resume formal training in the same stage directory:
 ```bash
 CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
   /data_p6/fzj/conda/envs/RMDM/bin/python -m accelerate.commands.launch \
-  --multi_gpu --num_processes 4 --main_process_port 29641 \
+  --multi_gpu --num_processes 4 --num_machines 1 --mixed_precision bf16 \
+  --dynamo_backend no --main_process_port 29641 \
   -m experimental.tx_prior.train --config experimental/tx_prior/train.yaml \
   --resume-from runs/tx_prior/train/checkpoints/last.pth
 ```
