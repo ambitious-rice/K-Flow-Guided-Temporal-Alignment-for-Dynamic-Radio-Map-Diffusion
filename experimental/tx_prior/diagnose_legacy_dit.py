@@ -12,7 +12,9 @@ import torch
 from torch.utils.data import DataLoader
 
 from rmdm.diffusion import DDIMSampler
-from rmdm.evaluation.fixed_sparse_protocol import apply_fixed_sparse_observations, frame_names_by_sample
+from rmdm.evaluation.fixed_sparse_protocol import (
+    apply_fixed_sparse_observations, deterministic_frame_noise_like, frame_names_by_sample,
+)
 from rmdm.evaluation.metrics import MetricAccumulator
 from rmdm_hvdit_v4_joint.config import ExperimentConfig, _from_mapping
 from rmdm_hvdit_v4_joint.evaluation.evaluator import manifest_video_ids
@@ -53,6 +55,8 @@ def main():
     parser.add_argument("--current-checkpoint", default="")
     parser.add_argument("--frames", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--precision", choices=("fp32", "bf16"), default="fp32")
+    parser.add_argument("--noise-protocol", choices=("shared-prior", "historical-p1"), default="shared-prior")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     config = load_config(args.config, smoke=False)
@@ -88,20 +92,23 @@ def main():
     scored = 0
     started = time.perf_counter()
     samplers = dict(old=DDIMSampler(legacy_config.diffusion), current=DDIMSampler(config.diffusion))
-    print(f"Old DiT paired observation test: {args.frames} frames, DDIM20, FP32", flush=True)
+    print(f"Old DiT paired observation test: {args.frames} frames, DDIM20, {args.precision}", flush=True)
     for dense in loader:
         dense = {k: v.cuda() if torch.is_tensor(v) else v for k, v in dense.items()}
         prior = zero_observations(dense)
         names = frame_names_by_sample(prior, batch_size=prior["target"].shape[0], window_size=1)
         scenes.update(name[0].split("/")[0] for name in names)
-        noise = deterministic_prior_noise_like(prior["target"], names, seed=config.sampling.seed)
+        noise = (deterministic_frame_noise_like(prior["target"], names, rate=1, seed=config.sampling.seed)
+                 if args.noise_protocol == "historical-p1" else
+                 deterministic_prior_noise_like(prior["target"], names, seed=config.sampling.seed))
         predictions = {}
         for label in labels:
             batch = (apply_fixed_sparse_observations(dense, rate=int(label[-1]), split="val")
                      if label.startswith("old_p") else prior)
             model = current if label == "current_zero" else legacy
             sampler = samplers["current" if label == "current_zero" else "old"]
-            prediction = sampler.sample(model, batch, initial_noise=noise, steps=20, eta=0)
+            with torch.autocast("cuda", dtype=torch.bfloat16, enabled=args.precision == "bf16"):
+                prediction = sampler.sample(model, batch, initial_noise=noise, steps=20, eta=0)
             predictions[label] = prediction
             accumulators[label].update(prediction, batch["target"], batch["building"],
                                        batch["vehicle"], batch["sampling_mask"])
@@ -114,8 +121,8 @@ def main():
         raise RuntimeError("frame count mismatch")
     write_result(output, dict(schema="tx_prior_legacy_dit_observation_diagnosis_v1",
         checkpoint=metadata, current_checkpoint=current_metadata, scored_frames=scored,
-        scene_coverage=dict(scenes), steps=20, eta=0, precision="fp32",
-        device=torch.cuda.get_device_name(), noise="same_tx-prior-ddim-noise-v1_all_settings",
+        scene_coverage=dict(scenes), steps=20, eta=0, precision=args.precision,
+        device=torch.cuda.get_device_name(), noise=args.noise_protocol,
         results={k: dict(metrics=v.compute(), raw=v.raw()) for k, v in accumulators.items()},
         prediction_mse_delta_vs_old_zero={k: v/pixel_count for k, v in prediction_delta.items()},
         zero_ablation="RSS_and_mask_zero_before_all_encoding_HWM_recomputed_not_raw_only_ablation",
