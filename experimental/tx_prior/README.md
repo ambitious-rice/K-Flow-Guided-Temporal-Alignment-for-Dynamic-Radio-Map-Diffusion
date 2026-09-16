@@ -103,38 +103,7 @@ dataset batch and must not instantiate `SamplingPolicy`. Prior evaluation uses
 `deterministic_prior_noise_like`, whose seed depends only on frame identity and
 the experiment seed (there is intentionally no observation-rate argument).
 
-## Standalone sampling comparison
-
-Evaluate one epsilon checkpoint without changing training files:
-
-```bash
-CUDA_VISIBLE_DEVICES=1 PYTHONPATH=src:. python -m experimental.tx_prior.evaluate \
-  --config experimental/tx_prior/remote.yaml \
-  --checkpoint runs/tx_prior/train/checkpoints/best.pth --batch-size 4 --steps 20 50
-```
-
-Add `--smoke --smoke-frames 4` for a one-video end-to-end precheck. Formal
-evaluation requires all 3000 manifest frames and calls `runner.validate_prior`.
-Both step counts use the same CPU-loaded checkpoint, seed, frame-keyed noise,
-manifest and eta=0. Evaluation is FP32: training validation directly calls core
-methods and bypasses the BF16 prepared-forward wrapper. Model weights load
-strictly; optimizer/RNG states are not restored. JSON results are exclusive-create
-under `train/sampling_eval/step_NNNNNN/ddimNN.json`; smoke uses a separate `smoke`
-subdirectory. Existing results are never overwritten. `--output-dir` may select
-only a descendant of that sampling-evaluation directory. No previews are generated.
-
 ## Disposable packed cache
-
-`python -m experimental.tx_prior.diagnose --checkpoint ... --output
-runs/tx_prior/train/diagnostics/step_NNNNNN.json` runs small paired train/val
-fresh-noise checks: forward/cache parity, timestep-binned epsilon/x0 errors,
-scene shuffle, copy-cal/zero-x0 baselines, and FP32/BF16 forward comparison.
-An optional `--old-checkpoint` loads the original 96-channel UNet strictly and
-uses its native traffic encoding on the **same current dataset frames**. These
-are domain-transfer diagnostics, not a reproduction on the missing old data.
-Default sample size is 30 frames/split, with paired val DDIM20/50 (eta=0).
-For smoke use 2 frames/split, timesteps 100/900, and a separate smoke JSON.
-Outputs refuse overwrite; training files and model weights are never changed.
 
 Raw data remains the source of truth on the `/data_p6` mechanical array. The
 packed cache is a derived, disposable artifact under `/home/fzj` on the root
