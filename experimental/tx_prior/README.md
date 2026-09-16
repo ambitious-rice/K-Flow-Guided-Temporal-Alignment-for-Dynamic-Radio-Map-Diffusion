@@ -123,8 +123,6 @@ under `train/sampling_eval/step_NNNNNN/ddimNN.json`; smoke uses a separate `smok
 subdirectory. Existing results are never overwritten. `--output-dir` may select
 only a descendant of that sampling-evaluation directory. No previews are generated.
 
-## Disposable packed cache
-
 `python -m experimental.tx_prior.diagnose --checkpoint ... --output
 runs/tx_prior/train/diagnostics/step_NNNNNN.json` runs small paired train/val
 fresh-noise checks: forward/cache parity, timestep-binned epsilon/x0 errors,
@@ -135,6 +133,15 @@ are domain-transfer diagnostics, not a reproduction on the missing old data.
 Default sample size is 30 frames/split, with paired val DDIM20/50 (eta=0).
 For smoke use 2 frames/split, timesteps 100/900, and a separate smoke JSON.
 Outputs refuse overwrite; training files and model weights are never changed.
+
+Diagnostic and standalone evaluation tools are maintained on the Git branch
+`experimental/tx-prior-diagnostics`, separately from production training on main.
+`evaluate_legacy` evaluates the old native-condition UNet on all 3000 current
+validation frames. `audit_data` is CPU-only and checks the full index plus
+stratified PNG/condition/frame alignment and exact packed-reader equivalence;
+it does not modify datasets. Results stay under the existing task's `train`.
+
+## Disposable packed cache
 
 Raw data remains the source of truth on the `/data_p6` mechanical array. The
 packed cache is a derived, disposable artifact under `/home/fzj` on the root
