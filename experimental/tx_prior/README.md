@@ -125,6 +125,17 @@ only a descendant of that sampling-evaluation directory. No previews are generat
 
 ## Disposable packed cache
 
+`python -m experimental.tx_prior.diagnose --checkpoint ... --output
+runs/tx_prior/train/diagnostics/step_NNNNNN.json` runs small paired train/val
+fresh-noise checks: forward/cache parity, timestep-binned epsilon/x0 errors,
+scene shuffle, copy-cal/zero-x0 baselines, and FP32/BF16 forward comparison.
+An optional `--old-checkpoint` loads the original 96-channel UNet strictly and
+uses its native traffic encoding on the **same current dataset frames**. These
+are domain-transfer diagnostics, not a reproduction on the missing old data.
+Default sample size is 30 frames/split, with paired val DDIM20/50 (eta=0).
+For smoke use 2 frames/split, timesteps 100/900, and a separate smoke JSON.
+Outputs refuse overwrite; training files and model weights are never changed.
+
 Raw data remains the source of truth on the `/data_p6` mechanical array. The
 packed cache is a derived, disposable artifact under `/home/fzj` on the root
 NVMe filesystem. Its fixed recommended location is
