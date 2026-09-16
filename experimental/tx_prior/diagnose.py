@@ -130,6 +130,8 @@ def measure(model, prior, xt, noise, t, alpha, *, check_path):
             bf16_epsilon, _ = model(xt, t, prior)
         bf16_x0 = x0_from_epsilon(xt, bf16_epsilon.float(), alpha)
         values["bf16_fp32_epsilon_delta"] = mse_per_frame(bf16_epsilon, epsilon)
+        values["bf16_epsilon_mse"] = mse_per_frame(bf16_epsilon, noise)
+        values["bf16_x0_mse"] = mse_per_frame(bf16_x0, prior["target"])
         values["bf16_x0_clipped_mse"] = mse_per_frame(bf16_x0.clamp(0, 1), prior["target"])
     for key in ("building", "tx", "vehicle"):
         values[f"copy_{key}_x0_mse"] = mse_per_frame(prior[key], prior["target"])
