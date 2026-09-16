@@ -103,6 +103,26 @@ dataset batch and must not instantiate `SamplingPolicy`. Prior evaluation uses
 `deterministic_prior_noise_like`, whose seed depends only on frame identity and
 the experiment seed (there is intentionally no observation-rate argument).
 
+## Standalone sampling comparison
+
+Evaluate one epsilon checkpoint without changing training files:
+
+```bash
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=src:. python -m experimental.tx_prior.evaluate \
+  --config experimental/tx_prior/remote.yaml \
+  --checkpoint runs/tx_prior/train/checkpoints/best.pth --batch-size 4 --steps 20 50
+```
+
+Add `--smoke --smoke-frames 4` for a one-video end-to-end precheck. Formal
+evaluation requires all 3000 manifest frames and calls `runner.validate_prior`.
+Both step counts use the same CPU-loaded checkpoint, seed, frame-keyed noise,
+manifest and eta=0. Evaluation is FP32: training validation directly calls core
+methods and bypasses the BF16 prepared-forward wrapper. Model weights load
+strictly; optimizer/RNG states are not restored. JSON results are exclusive-create
+under `train/sampling_eval/step_NNNNNN/ddimNN.json`; smoke uses a separate `smoke`
+subdirectory. Existing results are never overwritten. `--output-dir` may select
+only a descendant of that sampling-evaluation directory. No previews are generated.
+
 ## Disposable packed cache
 
 Raw data remains the source of truth on the `/data_p6` mechanical array. The
