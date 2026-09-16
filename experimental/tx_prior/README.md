@@ -1,11 +1,11 @@
 # tx_prior
 
 Single task directory for the W1 TX-conditioned scene prior. The model receives
-`building`, `vehicle`, and explicit `tx`; `observed_rss` and `sampling_mask` are
-canonical zeros at the model boundary, including HWM, condition pyramid, and
-denoiser stem paths. This preserves the existing V4 tensor shapes without using
-samples, observation noise, observation alignment, heldout loss, or condition
-dropout.
+`building`, `vehicle`, and explicit `tx`. Its HWM has three input channels, and
+its input and condition stems have no observation projection or fusion;
+`observed_rss` and `sampling_mask` do not enter either network. Training uses
+the standard epsilon-DDPM objective without samples, observation noise,
+observation alignment, heldout loss, or condition dropout.
 
 `smoke.py` is a preflight-only helper. Real two-step smoke training is explicit:
 
@@ -67,8 +67,11 @@ run. The local runner calls
 `build_scene_prior_system` and never constructs sparse observations.
 
 Outputs remain under one task root: smoke uses `runs/tx_prior/smoke`, and formal
-training uses `runs/tx_prior/train`. Fresh runs refuse only a non-empty matching
-stage directory. Resume with the matching stage's `checkpoints/last.pth`.
+training uses `runs/tx_prior/train`. Before the first epsilon run, the completed
+x0 baseline is archived once as the sibling `runs/tx_prior/x0`; epsilon then
+starts from step zero in a fresh `train` directory. Later fixes and resumes stay
+in that same directory. Fresh runs refuse a non-empty matching stage directory.
+Resume with the matching stage's `checkpoints/last.pth`.
 
 `remote.yaml` is the short machine-specific equivalent for the two GPUs and
 paths on `lab_server_137` (batch 64/GPU, accumulation 2, global batch 256). Run

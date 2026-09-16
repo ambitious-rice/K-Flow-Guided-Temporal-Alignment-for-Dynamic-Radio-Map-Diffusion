@@ -3,7 +3,7 @@ data:
   root: /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
   split_file: /data_p6/fzj/resources/RMDM/components/dataset_metadata/multi20_formal_scene_split.json
 diffusion:
-  prediction_type: sample
+  prediction_type: epsilon
 model:
   use_explicit_tx_condition: true
   use_tx_source_supervision: true

@@ -29,12 +29,11 @@ from rmdm_hvdit_v4_joint.training.engine import (
     step_scheduler_on_global_update,
     write_json_atomic,
 )
-from rmdm_hvdit_v4_x0.training.step import training_step
-
 from .adapter import build_scene_prior_system
 from .checkpoint import load, save
 from .data import deterministic_prior_noise_like, make_prior_training_batch
 from .packed import PackedFrameReader
+from .step import training_step
 
 
 def validation_due(train: Any, step: int) -> bool:
@@ -430,7 +429,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                 with accelerator.autocast():
                     result = training_step(model, dense, policy, diffusion, training_seed=train.seed,
                         epoch=epoch, pinn_k=config.stage1.pinn_k, pinn_weight=config.stage1.pinn_weight,
-                        use_tx_source_supervision=True, observation_alignment_weight=0.0)
+                        use_tx_source_supervision=True)
                 accelerator.backward(result.loss)
                 if accelerator.sync_gradients:
                     accelerator.clip_grad_norm_(model.parameters(), train.gradient_clip_norm)
@@ -452,7 +451,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                 losses = torch.stack(
                     (
                         result.loss.detach().float(),
-                        result.clean_data_loss.detach().float(),
+                        result.diffusion_loss.detach().float(),
                         result.calibration_loss.detach().float(),
                     )
                 )
@@ -471,7 +470,7 @@ def run(config: Any, *, config_path: Path, repository_root: Path, resume_from: s
                 peak = _distributed_max(accelerator, peak_local)
                 if accelerator.is_main_process:
                     append_jsonl(output / "train.jsonl", {"global_step": global_step,
-                        "loss": float(reduced_losses[0]), "clean_data_loss": float(reduced_losses[1]),
+                        "loss": float(reduced_losses[0]), "diffusion_loss": float(reduced_losses[1]),
                         "calibration_loss": float(reduced_losses[2]), "step_seconds": float(slowest) / timed_steps,
                         "global_samples_per_second": (
                             train.effective_global_batch_size

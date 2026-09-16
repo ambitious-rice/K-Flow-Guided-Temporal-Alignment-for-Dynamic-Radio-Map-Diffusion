@@ -12,18 +12,22 @@ from torch import nn
 class TrainableHWM(nn.Module):
     """Run the legacy HWM framewise and expose only its exact gate and ``cal``."""
 
-    def __init__(self, hwm: nn.Module, *, chunk_size: int) -> None:
+    def __init__(self, hwm: nn.Module, *, chunk_size: int, input_channels: int = 5) -> None:
         super().__init__()
         if chunk_size <= 0:
             raise ValueError("HWM chunk_size must be positive")
+        if input_channels not in (3, 5):
+            raise ValueError("HWM input_channels must be 3 (scene) or 5 (sparse)")
         self.hwm = hwm
         self.chunk_size = int(chunk_size)
+        self.input_channels = int(input_channels)
         for parameter in self.hwm.parameters():
             parameter.requires_grad_(True)
 
-    @staticmethod
-    def conditions(batch: dict[str, Any]) -> torch.Tensor:
-        required = ("building", "tx", "vehicle", "observed_rss", "sampling_mask")
+    def conditions(self, batch: dict[str, Any]) -> torch.Tensor:
+        required = ["building", "tx", "vehicle"]
+        if self.input_channels == 5:
+            required.extend(("observed_rss", "sampling_mask"))
         missing = [name for name in required if name not in batch]
         if missing:
             raise KeyError(f"sparse batch misses HWM inputs: {missing}")
@@ -31,23 +35,25 @@ class TrainableHWM(nn.Module):
         for name in required:
             if batch[name].shape != reference.shape:
                 raise ValueError(f"HWM input {name!r} shape differs from building")
-        return torch.cat(
-            (
-                batch["building"] + 10.0 * batch["tx"],
-                batch["tx"],
-                batch["vehicle"],
-                batch["observed_rss"],
-                batch["sampling_mask"],
-            ),
-            dim=2,
-        )
+        values = [
+            batch["building"] + 10.0 * batch["tx"],
+            batch["tx"],
+            batch["vehicle"],
+        ]
+        if self.input_channels == 5:
+            values.extend((batch["observed_rss"], batch["sampling_mask"]))
+        return torch.cat(values, dim=2)
 
     def forward(self, batch: dict[str, Any]) -> dict[str, torch.Tensor]:
         conditions = self.conditions(batch)
-        if conditions.ndim != 5 or conditions.shape[2] != 5:
-            raise ValueError("HWM conditions must be [B,T,5,H,W]")
+        if conditions.ndim != 5 or conditions.shape[2] != self.input_channels:
+            raise ValueError(
+                f"HWM conditions must be [B,T,{self.input_channels},H,W]"
+            )
         batch_size, time, _, height, width = conditions.shape
-        flat = conditions.reshape(batch_size * time, 5, height, width)
+        flat = conditions.reshape(
+            batch_size * time, self.input_channels, height, width
+        )
         gates: list[torch.Tensor] = []
         calibrations: list[torch.Tensor] = []
         for start in range(0, flat.shape[0], self.chunk_size):
@@ -76,9 +82,18 @@ class TrainableHWM(nn.Module):
         }
 
 
-def build_hwm_from_scratch(*, base_features: int) -> nn.Module:
+def build_hwm_from_scratch(*, base_features: int, input_channels: int = 5) -> nn.Module:
     if base_features != 32:
         raise ValueError("the exact RMDM HWM contract requires 32 base features")
     from unet import Generic_UNet
 
-    return Generic_UNet(5, base_features, 1, 5, anchor_out=True, upscale_logits=True)
+    if input_channels not in (3, 5):
+        raise ValueError("HWM input_channels must be 3 (scene) or 5 (sparse)")
+    return Generic_UNet(
+        input_channels,
+        base_features,
+        1,
+        5,
+        anchor_out=True,
+        upscale_logits=True,
+    )

@@ -18,8 +18,8 @@ def load_config(path: str | Path, *, smoke: bool) -> ExperimentConfig:
     train = config.t1_train
     if not config.model.use_explicit_tx_condition:
         raise ValueError("tx_prior requires explicit TX conditioning")
-    if config.diffusion.prediction_type != "sample":
-        raise ValueError("tx_prior is a clean-x0 prediction experiment")
+    if config.diffusion.prediction_type != "epsilon":
+        raise ValueError("tx_prior requires standard epsilon prediction")
     expected = len(config.pipeline.allowed_physical_gpus) * train.per_gpu_batch_size * train.gradient_accumulation_steps
     if expected != train.effective_global_batch_size:
         raise ValueError(f"effective global batch is {expected}, configured {train.effective_global_batch_size}")

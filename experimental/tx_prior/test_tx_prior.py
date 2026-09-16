@@ -9,8 +9,13 @@ import pytest
 import torch
 from torch import nn
 
-from experimental.tx_prior.adapter import ScenePriorSystem, scene_prior_batch
-from experimental.tx_prior.checkpoint import restore_cuda_rng
+from experimental.tx_prior.adapter import (
+    ScenePriorSystem,
+    T1SceneStem,
+    build_scene_prior_system,
+    scene_prior_batch,
+)
+from experimental.tx_prior.checkpoint import SCHEMA, restore_cuda_rng
 from experimental.tx_prior.data import (
     deterministic_prior_noise_like,
     make_prior_training_batch,
@@ -33,26 +38,26 @@ from experimental.tx_prior.packed import (
     remove_cache,
     verify_cache,
 )
+from experimental.tx_prior.config import load_config
+from experimental.tx_prior.step import training_step
+from rmdm.diffusion.process import DiffusionTrainingBatch
 from rmdm.legacy import LegacyVideoRecord
+from rmdm_hvdit_v4_joint.model.hwm import TrainableHWM
 
 
 class FakeHWM(nn.Module):
     def forward(self, batch):
         scene = batch["building"] + 2 * batch["tx"] + 3 * batch["vehicle"]
-        observation = 5 * batch["observed_rss"] + 7 * batch["sampling_mask"]
-        return {"hwm_gate": scene + observation, "cal": scene + observation}
+        return {"hwm_gate": scene, "cal": scene}
 
 
 class FakeDenoiser(nn.Module):
     def encode_raw_conditions(self, raw):
         scene = raw["building"] + 11 * raw["tx"] + 13 * raw["vehicle"]
-        observation = 17 * raw["observed_rss"] + 19 * raw["sampling_mask"]
-        high = scene + observation
-        return high, 2 * high
+        return scene, 2 * scene
 
     def forward(self, noisy_target, diffusion_step, cache):
-        observation = 23 * cache["observed_rss"] + 29 * cache["sampling_mask"]
-        return noisy_target + cache["hwm_gate"] + cache["condition_high"] + observation
+        return noisy_target + cache["hwm_gate"] + cache["condition_high"]
 
 
 def batch(*, tx_value=1.0, observed_value=0.0, mask_value=0.0):
@@ -80,26 +85,14 @@ def test_observations_cannot_change_cache_or_output():
     second = batch(observed_value=91, mask_value=1)
     first_cache = model.encode_conditions(first)
     second_cache = model.encode_conditions(second)
-    for key in (
-        "observed_rss",
-        "sampling_mask",
-        "hwm_gate",
-        "cal",
-        "condition_high",
-        "condition_low",
-    ):
+    assert "observed_rss" not in first_cache
+    assert "sampling_mask" not in first_cache
+    for key in ("hwm_gate", "cal", "condition_high", "condition_low"):
         assert torch.equal(first_cache[key], second_cache[key]), key
     noisy = torch.randn_like(first["building"])
     timestep = torch.tensor([3, 9])
     assert torch.equal(
         model(noisy, timestep, first)[0], model(noisy, timestep, second)[0]
-    )
-    # Even a caller-modified cache is sanitized immediately before the input stem.
-    second_cache["observed_rss"].fill_(100)
-    second_cache["sampling_mask"].fill_(1)
-    assert torch.equal(
-        model.denoise(noisy, timestep, first_cache),
-        model.denoise(noisy, timestep, second_cache),
     )
 
 
@@ -109,6 +102,82 @@ def test_tx_remains_an_effective_condition():
     with_tx = model.encode_conditions(batch(tx_value=1))
     assert not torch.equal(without_tx["hwm_gate"], with_tx["hwm_gate"])
     assert not torch.equal(without_tx["condition_high"], with_tx["condition_high"])
+
+
+def test_scene_stem_has_no_observation_projection_or_fusion():
+    stem = T1SceneStem(dense_channels=3, dim=8, patch_size=2)
+    assert set(dict(stem.named_parameters())) == {"dense_projection.weight"}
+    dense = torch.randn(2, 1, 3, 4, 4)
+    first = stem(dense, torch.randn(2, 1, 2, 4, 4))
+    second = stem(dense, torch.randn(2, 1, 2, 4, 4))
+    assert torch.equal(first, second)
+    assert first.shape == (2, 1, 2, 2, 8)
+
+
+def test_scene_hwm_uses_exactly_three_channels():
+    hwm = TrainableHWM(nn.Identity(), chunk_size=1, input_channels=3)
+    first = hwm.conditions(batch(observed_value=-3, mask_value=0))
+    second = hwm.conditions(batch(observed_value=91, mask_value=1))
+    assert first.shape[2] == 3
+    assert torch.equal(first, second)
+
+
+def test_built_prior_has_no_observation_stem_and_three_channel_hwm():
+    config = load_config(Path(__file__).with_name("smoke.yaml"), smoke=True)
+    model = build_scene_prior_system(config, attention_backend="torch")
+    denoiser_names = set(dict(model.denoiser.named_parameters()))
+    assert not any("observation_projection" in name for name in denoiser_names)
+    assert not any("input_stem.fusion" in name for name in denoiser_names)
+    assert not any("condition_stem.fusion" in name for name in denoiser_names)
+    first_hwm_conv = model.hwm.hwm.conv_blocks_context[0].blocks[0].conv
+    assert isinstance(first_hwm_conv, nn.Conv2d)
+    assert model.hwm.input_channels == 3
+    assert first_hwm_conv.in_channels == 3
+
+
+def test_training_step_regresses_true_epsilon_not_x0():
+    shape = (2, 1, 1, 2, 2)
+    dense = {
+        **batch(observed_value=0, mask_value=0),
+        "target": torch.full(shape, 17.0),
+        "sampling_rate": torch.zeros(2),
+        "video_id": ["a", "b"],
+        "start": torch.tensor([0, 1]),
+    }
+    # Match all condition shapes to this test's compact target.
+    for key in ("building", "tx", "vehicle", "observed_rss", "sampling_mask"):
+        dense[key] = dense[key][..., :2, :2]
+
+    class FakeDiffusion:
+        def training_batch(self, target, *, seeds):
+            assert len(seeds) == target.shape[0]
+            return DiffusionTrainingBatch(
+                noisy_target=torch.zeros_like(target),
+                noise=torch.full_like(target, 2.0),
+                timesteps=torch.tensor([3, 5]),
+            )
+
+        def predict_x0(self, noisy_target, predicted_noise, timesteps):
+            return torch.zeros_like(noisy_target)
+
+    class EpsilonModel(nn.Module):
+        def forward(self, noisy_target, timesteps, sparse_batch):
+            return torch.full_like(noisy_target, 3.0), torch.zeros_like(noisy_target)
+
+    result = training_step(
+        EpsilonModel(),
+        dense,
+        lambda value: value,
+        FakeDiffusion(),
+        training_seed=7,
+        epoch=0,
+        pinn_k=1.0,
+        pinn_weight=0.0,
+    )
+    # (predicted epsilon 3 - true epsilon 2)^2 == 1. If this regressed x0=17,
+    # the value would instead be 196.
+    assert result.diffusion_loss.item() == pytest.approx(1.0)
+    assert torch.allclose(result.epsilon_mse_per_sample, torch.ones(2))
 
 
 def test_training_batch_is_built_without_sampling():
@@ -177,6 +246,9 @@ def test_configs_keep_single_output_and_formal_machine_paths():
     assert remote["t1_train"]["gradient_accumulation_steps"] == 2
     assert remote["t1_train"]["effective_global_batch_size"] == 256
     assert remote["t1_train"]["max_steps"] == 80_000
+    assert formal["diffusion"]["prediction_type"] == "epsilon"
+    assert smoke["diffusion"]["prediction_type"] == "epsilon"
+    assert remote["diffusion"]["prediction_type"] == "epsilon"
 
 
 def test_early_stop_improvement_and_patience_after_minimum_step():
@@ -221,6 +293,10 @@ def test_old_checkpoint_early_stop_state_is_safe_and_new_state_restores():
     payload = {"early_stop": {"best_score": 0.25, "best_step": 15_000,
                                "stale_validations": 1}}
     assert initial_early_stop_state(payload) == payload["early_stop"]
+
+
+def test_checkpoint_schema_marks_epsilon_scene_architecture():
+    assert SCHEMA == "tx_prior_epsilon_scene_checkpoint_v1"
 
 
 def test_step_validation_path_and_foreign_step_protection(tmp_path):

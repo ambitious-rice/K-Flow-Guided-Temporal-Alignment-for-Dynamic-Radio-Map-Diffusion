@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 import torch
 
-SCHEMA = "tx_prior_w1_checkpoint_v1"
+SCHEMA = "tx_prior_epsilon_scene_checkpoint_v1"
 
 
 def restore_cuda_rng(states: list[torch.Tensor]) -> dict[str, Any]:
