@@ -1,0 +1,26 @@
+data:
+  root: /data_16T_137/fzj/RMDM/resources/datasets/M20_Formal075_RadioMapSeerPack
+  split_file: /data_16T_137/fzj/RMDM/resources/components/dataset_metadata/multi20_formal_scene_split.json
+diffusion:
+  prediction_type: epsilon
+model:
+  use_explicit_tx_condition: true
+  use_tx_source_supervision: true
+t1_train:
+  max_steps: 2
+  per_gpu_batch_size: 64
+  gradient_accumulation_steps: 2
+  effective_global_batch_size: 256
+  mixed_precision: bf16
+  gradient_checkpointing: false
+  validation_first_step: 2
+  checkpoint_every_steps: 2
+pipeline:
+  output_root: runs/tx_prior
+  allowed_physical_gpus: [0, 1]
+  allow_gpu_co_tenancy: false
+  wait_for_gpus: false
+  lock_file: runs/tx_prior/.pipeline.lock
+  default_through: t1_smoke
+evaluation:
+  subset_manifest: /data_16T_137/fzj/RMDM/resources/components/manifests/dynamic_sparse_v2_semantic_vehicle/val_subset_v1.json

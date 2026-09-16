@@ -224,10 +224,14 @@ def test_configs_keep_single_output_and_formal_machine_paths():
     formal = yaml.safe_load((directory / "train.yaml").read_text(encoding="utf-8"))
     smoke = yaml.safe_load((directory / "smoke.yaml").read_text(encoding="utf-8"))
     remote = yaml.safe_load((directory / "remote.yaml").read_text(encoding="utf-8"))
+    remote_smoke = yaml.safe_load(
+        (directory / "remote_smoke.yaml").read_text(encoding="utf-8")
+    )
     assert (
         formal["pipeline"]["output_root"]
         == smoke["pipeline"]["output_root"]
         == remote["pipeline"]["output_root"]
+        == remote_smoke["pipeline"]["output_root"]
         == "runs/tx_prior"
     )
     assert formal["pipeline"]["allowed_physical_gpus"] == [4, 5, 6, 7]
@@ -249,6 +253,17 @@ def test_configs_keep_single_output_and_formal_machine_paths():
     assert formal["diffusion"]["prediction_type"] == "epsilon"
     assert smoke["diffusion"]["prediction_type"] == "epsilon"
     assert remote["diffusion"]["prediction_type"] == "epsilon"
+    assert remote_smoke["data"] == remote["data"]
+    assert remote_smoke["evaluation"] == remote["evaluation"]
+    assert remote_smoke["pipeline"]["allowed_physical_gpus"] == [0, 1]
+    assert remote_smoke["t1_train"]["max_steps"] == 2
+    assert remote_smoke["t1_train"]["per_gpu_batch_size"] == 64
+    assert remote_smoke["t1_train"]["gradient_accumulation_steps"] == 2
+    assert remote_smoke["t1_train"]["effective_global_batch_size"] == 256
+    assert remote_smoke["t1_train"]["mixed_precision"] == "bf16"
+    assert remote_smoke["t1_train"]["validation_first_step"] == 2
+    assert remote_smoke["t1_train"]["checkpoint_every_steps"] == 2
+    assert remote_smoke["diffusion"]["prediction_type"] == "epsilon"
 
 
 def test_early_stop_improvement_and_patience_after_minimum_step():

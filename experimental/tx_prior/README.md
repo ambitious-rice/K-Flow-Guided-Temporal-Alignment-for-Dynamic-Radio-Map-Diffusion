@@ -21,6 +21,22 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PYTHONPATH=src:. \
 The production environment on this machine uses `torch==2.11.0+cu128` and
 `natten==0.21.6+torch2110cu128`.
 
+The fixed two-GPU remote smoke uses the verified packed cache explicitly:
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src:. \
+  /home/fzj/.venvs/rmdm_tx_prior/bin/python -m accelerate.commands.launch \
+  --multi_gpu --num_processes 2 --num_machines 1 --mixed_precision bf16 \
+  --dynamo_backend no --main_process_port 29641 \
+  -m experimental.tx_prior.train \
+  --config experimental/tx_prior/remote_smoke.yaml \
+  --smoke --smoke-data-limit 512 \
+  --packed-root /home/fzj/.cache/rmdm/tx_prior
+```
+
+This performs exactly two optimizer steps with batch 64/GPU, accumulation 2,
+and global batch 256. It writes only the fixed `runs/tx_prior/smoke` stage.
+
 If smoke stopped at step 0 before writing a checkpoint, restart it in place:
 
 ```bash
@@ -73,7 +89,7 @@ starts from step zero in a fresh `train` directory. Later fixes and resumes stay
 in that same directory. Fresh runs refuse a non-empty matching stage directory.
 Resume with the matching stage's `checkpoints/last.pth`.
 
-`remote.yaml` is the short machine-specific equivalent for the two GPUs and
+`remote.yaml` is the formal machine-specific equivalent for the two GPUs and
 paths on `lab_server_137` (batch 64/GPU, accumulation 2, global batch 256). Run
 it with repository root `/data_16T_137/fzj/RMDM/project`; deploy only the
 task-level `project/runs/tx_prior` symlink so it resolves to the unified task
