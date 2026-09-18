@@ -51,8 +51,9 @@ def zero_observations(batch):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="experimental/tx_prior/remote.yaml")
-    parser.add_argument("--checkpoint", required=True)
+    parser.add_argument("--checkpoint", default="")
     parser.add_argument("--current-checkpoint", default="")
+    parser.add_argument("--current-only", action="store_true")
     parser.add_argument("--frames", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--precision", choices=("fp32", "bf16"), default="fp32")
@@ -66,14 +67,22 @@ def main():
         raise ValueError("output must be new and under train/diagnostics")
     if args.batch_size < 1 or not 2 <= args.frames <= 3000 or torch.cuda.device_count() != 1:
         raise ValueError("require one visible GPU, positive batch, 2..3000 frames")
-    payload = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    legacy_config = old_config(payload, config)
-    legacy = build_t1_system(legacy_config)
-    legacy.load_state_dict(payload["model"], strict=True)
-    metadata = dict(path=str(Path(args.checkpoint).resolve()), step=payload["global_step"],
-                    original_resolved_config=payload["resolved_config"])
-    del payload
-    legacy = legacy.cuda().eval()
+    if args.current_only and not args.current_checkpoint:
+        raise ValueError("--current-only requires --current-checkpoint")
+    legacy = None
+    legacy_config = None
+    metadata = None
+    if not args.current_only:
+        if not args.checkpoint:
+            raise ValueError("--checkpoint is required unless --current-only is set")
+        payload = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+        legacy_config = old_config(payload, config)
+        legacy = build_t1_system(legacy_config)
+        legacy.load_state_dict(payload["model"], strict=True)
+        metadata = dict(path=str(Path(args.checkpoint).resolve()), step=payload["global_step"],
+                        original_resolved_config=payload["resolved_config"])
+        del payload
+        legacy = legacy.cuda().eval()
     current = None
     current_metadata = None
     if args.current_checkpoint:
@@ -84,15 +93,17 @@ def main():
     dataset = DiagnosticFrames(_dataset(config, split="val", fixed_starts=tuple(range(100)),
                                         video_ids=ids), args.frames, include_legacy=False)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=0)
-    labels = ["old_zero", "old_p1", "old_p2", "old_p3"] + (["current_zero"] if current else [])
+    labels = (["old_zero", "old_p1", "old_p2", "old_p3"] if legacy is not None else []) + (["current_zero"] if current else [])
     accumulators = {label: MetricAccumulator(device="cuda") for label in labels}
+    scene_accumulators = {label: {} for label in labels}
     scenes = Counter()
     prediction_delta = {label: 0.0 for label in labels if label != "old_zero"}
     pixel_count = 0
     scored = 0
     started = time.perf_counter()
-    samplers = dict(old=DDIMSampler(legacy_config.diffusion), current=DDIMSampler(config.diffusion))
-    print(f"Old DiT paired observation test: {args.frames} frames, DDIM20, {args.precision}", flush=True)
+    samplers = dict(old=DDIMSampler(legacy_config.diffusion) if legacy_config else None,
+                    current=DDIMSampler(config.diffusion))
+    print(f"Paired DiT scene evaluation: {args.frames} frames, DDIM20, {args.precision}", flush=True)
     for dense in loader:
         dense = {k: v.cuda() if torch.is_tensor(v) else v for k, v in dense.items()}
         prior = zero_observations(dense)
@@ -112,6 +123,12 @@ def main():
             predictions[label] = prediction
             accumulators[label].update(prediction, batch["target"], batch["building"],
                                        batch["vehicle"], batch["sampling_mask"])
+            for i, name in enumerate(names):
+                scene = name[0].split("/")[0]
+                metric = scene_accumulators[label].setdefault(scene, MetricAccumulator(device="cuda"))
+                metric.update(prediction[i:i + 1], batch["target"][i:i + 1],
+                              batch["building"][i:i + 1], batch["vehicle"][i:i + 1],
+                              batch["sampling_mask"][i:i + 1])
             if label != "old_zero":
                 prediction_delta[label] += (prediction.double()-predictions["old_zero"].double()).square().sum().item()
         pixel_count += prior["target"].numel()
@@ -124,6 +141,9 @@ def main():
         scene_coverage=dict(scenes), steps=20, eta=0, precision=args.precision,
         device=torch.cuda.get_device_name(), noise=args.noise_protocol,
         results={k: dict(metrics=v.compute(), raw=v.raw()) for k, v in accumulators.items()},
+        scene_results={label: {scene: dict(metrics=metric.compute(), raw=metric.raw())
+                              for scene, metric in scenes.items()}
+                      for label, scenes in scene_accumulators.items()},
         prediction_mse_delta_vs_old_zero={k: v/pixel_count for k, v in prediction_delta.items()},
         zero_ablation="RSS_and_mask_zero_before_all_encoding_HWM_recomputed_not_raw_only_ablation",
         limits="zero_observation_inputs_are_out_of_training_distribution_not_equivalent_to_retraining",
