@@ -136,6 +136,12 @@ Outputs refuse overwrite; training files and model weights are never changed.
 
 Diagnostic and standalone evaluation tools are maintained on the Git branch
 `experimental/tx-prior-diagnostics`, separately from production training on main.
+For diagnostic two-scene validation, use `--config experimental/tx_prior/remote_two_scene.yaml
+--expected-frames 2000 --output-dir runs/tx_prior/train/sampling_eval/two_scene`.
+The fixed manifest retains exactly the original 10 videos per remaining scene,
+excluding user-reported unusable `town01_opt_junction_0087`. Train/test membership,
+noise seeds and old three-scene results are unchanged. Results include per-scene
+metrics and additive statistics; do not mix these with three-scene model selection.
 `evaluate_legacy` evaluates the old native-condition UNet on all 3000 current
 validation frames. `audit_data` is CPU-only and checks the full index plus
 stratified PNG/condition/frame alignment and exact packed-reader equivalence;

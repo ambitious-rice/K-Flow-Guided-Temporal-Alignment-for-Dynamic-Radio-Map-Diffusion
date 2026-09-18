@@ -22,7 +22,7 @@ from .adapter import build_scene_prior_system
 from .checkpoint import SCHEMA
 from .config import load_config
 from .data import deterministic_prior_noise_like, make_prior_training_batch
-from .runner import _dataset, resolve_task_root, validate_prior
+from .runner import _dataset, resolve_task_root
 
 
 def positive_int(value: str) -> int:
@@ -42,6 +42,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-dir", default="")
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--smoke-frames", type=positive_int, default=4)
+    parser.add_argument("--expected-frames", type=int, choices=(2000, 3000), default=3000)
     args = parser.parse_args(argv)
     if len(set(args.steps)) != len(args.steps):
         parser.error("--steps must not repeat")
@@ -110,6 +111,41 @@ def validate_smoke(accelerator: Any, model: Any, config: Any, frames: int) -> di
             "metrics": metrics.compute(), "raw": metrics.raw()}
 
 
+@torch.no_grad()
+def validate_by_scene(accelerator: Any, model: Any, config: Any) -> dict[str, Any]:
+    """Same frame-keyed protocol, retaining additive per-scene statistics."""
+    ids = manifest_video_ids(config.evaluation.subset_manifest, "stage_a")
+    dataset = _dataset(config, split="val", fixed_starts=tuple(range(config.data.frames_per_video)), video_ids=ids)
+    loader = accelerator.prepare_data_loader(DataLoader(dataset,
+        batch_size=config.evaluation.t1_evaluation_batch_size, shuffle=False,
+        num_workers=min(config.data.workers, 2), drop_last=False))
+    core = accelerator.unwrap_model(model)
+    core.eval()
+    sampler = DDIMSampler(config.diffusion)
+    total = MetricAccumulator(device=accelerator.device)
+    scenes: dict[str, MetricAccumulator] = {}
+    counts: dict[str, int] = {}
+    scored = 0
+    for dense in loader:
+        prior = make_prior_training_batch(dense)
+        names = frame_names_by_sample(prior, batch_size=prior["target"].shape[0], window_size=1)
+        noise = deterministic_prior_noise_like(prior["target"], names, seed=config.sampling.seed)
+        prediction = sampler.sample(core, prior, initial_noise=noise, steps=config.evaluation.ddim_steps)
+        fields = (prediction, prior["target"], prior["building"], prior["vehicle"], prior["sampling_mask"])
+        total.update(*fields)
+        for index, name in enumerate(names):
+            scene = name[0].split("/")[0]
+            if scene not in scenes:
+                scenes[scene] = MetricAccumulator(device=accelerator.device)
+            scenes[scene].update(*(value[index:index+1] for value in fields))
+            counts[scene] = counts.get(scene, 0) + 1
+        scored += prediction.shape[0]
+    return {"schema": "tx_prior_validation_v1", "scored_frames": scored,
+            "metrics": total.compute(), "raw": total.raw(), "scene_frame_counts": counts,
+            "scene_metrics": {scene: values.compute() for scene, values in scenes.items()},
+            "scene_raw": {scene: values.raw() for scene, values in scenes.items()}}
+
+
 def evaluate(args: argparse.Namespace) -> None:
     repository = Path(args.repository_root).expanduser().resolve()
     config_path = Path(args.config).expanduser().resolve()
@@ -122,8 +158,8 @@ def evaluate(args: argparse.Namespace) -> None:
         raise ValueError("--output-dir must remain under runs/tx_prior/train/sampling_eval")
     if not args.smoke:
         expected = len(manifest_video_ids(config.evaluation.subset_manifest, "stage_a")) * config.data.frames_per_video
-        if expected != 3000:
-            raise ValueError(f"formal sampling evaluation requires exactly 3000 frames, got {expected}")
+        if expected != args.expected_frames:
+            raise ValueError(f"formal sampling evaluation requires exactly {args.expected_frames} frames, got {expected}")
     # Direct sampler methods bypass the prepared forward autocast wrapper;
     # training validation therefore uses FP32, which we preserve here.
     accelerator = Accelerator(mixed_precision="no")
@@ -147,7 +183,7 @@ def evaluate(args: argparse.Namespace) -> None:
             calls += 1
             if calls % steps == 0:
                 scored += inputs[0].shape[0]
-                if scored - last_report >= 100 or scored == 3000:
+                if scored - last_report >= 100 or scored == args.expected_frames:
                     print(f"DDIM{steps}: sampled {scored} frames", flush=True)
                     last_report = scored
 
@@ -158,9 +194,9 @@ def evaluate(args: argparse.Namespace) -> None:
         print(f"Starting DDIM{steps}, checkpoint step {checkpoint['global_step']}, batch {args.batch_size}, smoke={args.smoke}", flush=True)
         try:
             result = (validate_smoke(accelerator, model, config, args.smoke_frames)
-                      if args.smoke else validate_prior(accelerator, model, config))
-            if not args.smoke and result["scored_frames"] != 3000:
-                raise RuntimeError("formal evaluation did not score all 3000 frames")
+                      if args.smoke else validate_by_scene(accelerator, model, config))
+            if not args.smoke and result["scored_frames"] != args.expected_frames:
+                raise RuntimeError("formal evaluation did not score all expected frames")
             torch.cuda.synchronize()
         finally:
             hook.remove()
