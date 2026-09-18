@@ -129,7 +129,7 @@ def main():
                 metric.update(prediction[i:i + 1], batch["target"][i:i + 1],
                               batch["building"][i:i + 1], batch["vehicle"][i:i + 1],
                               batch["sampling_mask"][i:i + 1])
-            if label != "old_zero":
+            if label != "old_zero" and "old_zero" in predictions:
                 prediction_delta[label] += (prediction.double()-predictions["old_zero"].double()).square().sum().item()
         pixel_count += prior["target"].numel()
         scored += len(names)
