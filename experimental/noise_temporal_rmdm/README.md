@@ -60,6 +60,11 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. accelerate launch --num_processes 1 \
   --repository-root . --smoke --smoke-data-limit 256
 ```
 
+After the two-step checks pass, use `extended_smoke.yaml` for a 20-step,
+three-GPU stability check and then run the complete periodic DDIM20 validation
+protocol against its step-20 checkpoint. This is still a smoke run, not a
+model-quality result.
+
 GPU selection is an operational launch decision: check live utilization, then
 set `CUDA_VISIBLE_DEVICES` and the Accelerate process count. It is deliberately
 not hard-coded or policy-gated in the experiment configuration.

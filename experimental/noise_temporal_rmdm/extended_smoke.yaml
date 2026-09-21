@@ -1,0 +1,20 @@
+data:
+  root: /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
+  split_file: configs/splits/m20_formal075_clean16_scene_split.json
+  workers: 8
+  cache_size: 2
+train:
+  max_steps: 20
+  per_gpu_batch_size: 128
+  gradient_accumulation_steps: 1
+  mixed_precision: bf16
+  warmup_steps: 2
+  log_every_steps: 2
+  checkpoint_every_steps: 20
+validation:
+  subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_val.json
+  rates: [1.0, 3.0]
+  noise_standard_deviations: [0.0, 0.03, 0.05, 0.09]
+  frame_starts: [0, 50]
+  ddim_steps: 20
+  every_steps: 20

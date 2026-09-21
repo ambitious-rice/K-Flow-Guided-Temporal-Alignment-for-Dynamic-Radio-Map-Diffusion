@@ -199,10 +199,6 @@ class ExperimentConfig:
             raise ValueError("test noise standard deviations must be non-negative")
         if self.validation.ddim_steps <= 0 or self.final_test.ddim_steps <= 0:
             raise ValueError("evaluation DDIM steps must be positive")
-        if smoke and self.train.max_steps > 2:
-            raise ValueError("smoke configuration permits at most two updates")
-        if not smoke and self.train.max_steps <= 2:
-            raise ValueError("formal configuration cannot be smoke-sized")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
