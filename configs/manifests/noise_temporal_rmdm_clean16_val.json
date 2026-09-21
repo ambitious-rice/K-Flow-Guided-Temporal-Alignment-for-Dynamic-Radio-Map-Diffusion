@@ -1,0 +1,38 @@
+{
+  "schema": "noise_temporal_rmdm_validation_subset_v1",
+  "selection_seed": 20260921,
+  "selection_algorithm": "BLAKE2b-128 sort by scene/episode/tx, first 10 videos per scene",
+  "source_index": "/data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack/index.json",
+  "scene_split_file": "configs/splits/m20_formal075_clean16_scene_split.json",
+  "val_scene_ids": [
+    "town02_opt_junction_0298",
+    "town10_junction_0532"
+  ],
+  "frame_count_per_video": 100,
+  "stage_a": {
+    "purpose": "deterministic T1 DDIM validation",
+    "per_scene_video_count": 10,
+    "videos": [
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000073", "tx_id": "tx_29", "video_id": "town02_opt_junction_0298/episode_000073/tx_29", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000000", "tx_id": "tx_27", "video_id": "town02_opt_junction_0298/episode_000000/tx_27", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000116", "tx_id": "tx_08", "video_id": "town02_opt_junction_0298/episode_000116/tx_08", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000061", "tx_id": "tx_34", "video_id": "town02_opt_junction_0298/episode_000061/tx_34", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000105", "tx_id": "tx_21", "video_id": "town02_opt_junction_0298/episode_000105/tx_21", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000089", "tx_id": "tx_23", "video_id": "town02_opt_junction_0298/episode_000089/tx_23", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000118", "tx_id": "tx_10", "video_id": "town02_opt_junction_0298/episode_000118/tx_10", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000057", "tx_id": "tx_22", "video_id": "town02_opt_junction_0298/episode_000057/tx_22", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000091", "tx_id": "tx_08", "video_id": "town02_opt_junction_0298/episode_000091/tx_08", "frame_count": 100},
+      {"scene_id": "town02_opt_junction_0298", "episode_id": "episode_000048", "tx_id": "tx_18", "video_id": "town02_opt_junction_0298/episode_000048/tx_18", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000143", "tx_id": "tx_25", "video_id": "town10_junction_0532/episode_000143/tx_25", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000084", "tx_id": "tx_02", "video_id": "town10_junction_0532/episode_000084/tx_02", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000010", "tx_id": "tx_13", "video_id": "town10_junction_0532/episode_000010/tx_13", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000099", "tx_id": "tx_09", "video_id": "town10_junction_0532/episode_000099/tx_09", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000080", "tx_id": "tx_16", "video_id": "town10_junction_0532/episode_000080/tx_16", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000102", "tx_id": "tx_01", "video_id": "town10_junction_0532/episode_000102/tx_01", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000077", "tx_id": "tx_00", "video_id": "town10_junction_0532/episode_000077/tx_00", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000105", "tx_id": "tx_03", "video_id": "town10_junction_0532/episode_000105/tx_03", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000007", "tx_id": "tx_06", "video_id": "town10_junction_0532/episode_000007/tx_06", "frame_count": 100},
+      {"scene_id": "town10_junction_0532", "episode_id": "episode_000108", "tx_id": "tx_17", "video_id": "town10_junction_0532/episode_000108/tx_17", "frame_count": 100}
+    ]
+  }
+}

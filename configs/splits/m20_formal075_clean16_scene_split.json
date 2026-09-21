@@ -1,0 +1,35 @@
+{
+  "schema": "dynamic_radio_scene_split_v1",
+  "dataset": "M20_Formal075_RadioMapSeerPack",
+  "policy": "clean16_scene_disjoint_12_train_2_val_2_test",
+  "split_unit": "scene",
+  "train": [
+    "town01_opt_junction_0143",
+    "town02_opt_junction_0188",
+    "town04_opt_junction_0785",
+    "town05_opt_junction_0207",
+    "town05_opt_junction_0562",
+    "town05_opt_junction_1722",
+    "town05_opt_junction_2086",
+    "town10_junction_0023",
+    "town10_junction_0189",
+    "town10_junction_0664",
+    "town10_junction_0719",
+    "town10_junction_0895"
+  ],
+  "val": [
+    "town02_opt_junction_0298",
+    "town10_junction_0532"
+  ],
+  "test": [
+    "town04_opt_junction_0053",
+    "town05_opt_junction_0396"
+  ],
+  "excluded": [
+    "town01_opt_junction_0087",
+    "town05_opt_junction_0053",
+    "town05_opt_junction_0838",
+    "town05_opt_junction_1427"
+  ],
+  "excluded_reason": "User-verified invalid scene processing; retain source files but exclude them from training, validation, and test use."
+}
