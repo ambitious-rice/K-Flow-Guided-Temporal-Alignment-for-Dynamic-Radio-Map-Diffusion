@@ -33,6 +33,7 @@ class LegacyFrameReader:
         split_file: str,
         cache_size: int = 8,
         tx_heatmap_sigma_px: float = 1.5,
+        include_tx: bool = True,
         video_ids: set[str] | None = None,
     ) -> None:
         from lib.loaders import DynamicRadioMapRMDM
@@ -45,6 +46,7 @@ class LegacyFrameReader:
             cache_size=cache_size,
             tx_heatmap_sigma_px=tx_heatmap_sigma_px,
         )
+        self.include_tx = bool(include_tx)
         records = []
         for index, item in enumerate(self.dataset.records):
             record = LegacyVideoRecord(index, str(item["scene_id"]), str(item["episode_id"]), str(item["tx_id"]))
@@ -72,7 +74,6 @@ class LegacyFrameReader:
         )
         if building.max(initial=0.0) > 1.0:
             building = building / 255.0
-        tx = self.dataset._make_tx_heatmap(legacy, sigma_px=self.dataset.tx_heatmap_sigma_px)
         traffic_all = self.dataset._load_npz_array(legacy["traffic_grid_path"], "traffic_grid_uint8")
 
         vehicles = []
@@ -88,13 +89,16 @@ class LegacyFrameReader:
             targets.append(target)
             names.append(f"{record.video_id}/frame_{int(frame_id):06d}.png")
 
-        return {
+        result = {
             "building": np.broadcast_to(building, (length, *building.shape)).copy(),
-            "tx": np.broadcast_to(tx, (length, *tx.shape)).copy(),
             "vehicle": np.stack(vehicles),
             "target": np.stack(targets),
             "frame_names": names,
         }
+        if self.include_tx:
+            tx = self.dataset._make_tx_heatmap(legacy, sigma_px=self.dataset.tx_heatmap_sigma_px)
+            result["tx"] = np.broadcast_to(tx, (length, *tx.shape)).copy()
+        return result
 
 
 def build_stage1_hwm(checkpoint_path: str | Path) -> nn.Module:
@@ -113,4 +117,3 @@ def build_stage1_hwm(checkpoint_path: str | Path) -> nn.Module:
         raise KeyError(f"No {prefix!r} weights found in {checkpoint_path}")
     hwm.load_state_dict(hwm_state, strict=True)
     return hwm
-

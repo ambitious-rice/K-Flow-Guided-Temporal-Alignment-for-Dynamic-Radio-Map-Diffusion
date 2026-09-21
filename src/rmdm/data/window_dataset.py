@@ -64,6 +64,7 @@ class WindowDataset(Dataset):
         seed: int = 20260717,
         cache_size: int = 8,
         tx_heatmap_sigma_px: float = 1.5,
+        include_tx: bool = True,
         fixed_starts: Sequence[int] | None = None,
         video_ids: Sequence[str] | None = None,
         reader: WindowReader | None = None,
@@ -79,6 +80,7 @@ class WindowDataset(Dataset):
                 split_file=split_file,
                 cache_size=cache_size,
                 tx_heatmap_sigma_px=tx_heatmap_sigma_px,
+                include_tx=include_tx,
                 video_ids=set(video_ids) if video_ids is not None else None,
             )
         self.reader = reader
@@ -129,9 +131,12 @@ class WindowDataset(Dataset):
         record, start = self._resolve_item(index)
         arrays = self.reader.read_window(record, start, self.window_size)
         video_id = getattr(record, "video_id", str(record))
+        tensor_keys = ["building", "vehicle", "target"]
+        if "tx" in arrays:
+            tensor_keys.insert(1, "tx")
         item: dict[str, Any] = {
             key: torch.from_numpy(arrays[key]).unsqueeze(1).to(dtype=torch.float32).contiguous()
-            for key in ("building", "tx", "vehicle", "target")
+            for key in tensor_keys
         }
         item.update(
             {
