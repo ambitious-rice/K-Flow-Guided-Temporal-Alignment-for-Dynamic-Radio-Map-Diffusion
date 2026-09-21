@@ -29,6 +29,8 @@ in normalized units to match the paper convention.
 
 The loss is epsilon-prediction DDPM MSE plus clean calibration MSE and the
 legacy equation/obstacle physics terms. The Tx source-anchor term is removed.
+Legacy gradient checkpointing remains disabled because its backward recompute
+does not preserve BF16 autocast; the target 96 GB GPUs do not require it.
 
 ## Data gates
 

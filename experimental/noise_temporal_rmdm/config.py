@@ -62,7 +62,7 @@ class ModelConfig:
     variance_embedding_dim: int = 512
     variance_mlp_width: int = 512
     dropout: float = 0.0
-    gradient_checkpointing: bool = True
+    gradient_checkpointing: bool = False
     expected_trainable_parameters_min: int = 50_000_000
     expected_trainable_parameters_max: int = 180_000_000
 
