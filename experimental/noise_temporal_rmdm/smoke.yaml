@@ -5,7 +5,7 @@ data:
   cache_size: 1
 train:
   max_steps: 2
-  per_gpu_batch_size: 1
+  per_gpu_batch_size: 128
   gradient_accumulation_steps: 1
   mixed_precision: bf16
   warmup_steps: 0

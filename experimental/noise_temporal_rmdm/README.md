@@ -55,12 +55,19 @@ One-process real-data smoke (choose an actually idle GPU first):
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. accelerate launch --num_processes 1 \
   -m experimental.noise_temporal_rmdm.train \
   --config experimental/noise_temporal_rmdm/smoke.yaml \
-  --repository-root . --smoke --smoke-data-limit 4
+  --repository-root . --smoke --smoke-data-limit 256
 ```
 
 GPU selection is an operational launch decision: check live utilization, then
 set `CUDA_VISIBLE_DEVICES` and the Accelerate process count. It is deliberately
 not hard-coded or policy-gated in the experiment configuration.
+
+The formal target is global batch 256 for 40,000 optimizer steps: 10.24
+million frame presentations, or about 11.38 passes over the 900,000-frame
+Clean16 training split. The checked-in config is the currently tested two-GPU
+layout (`128 x 2 GPUs x accumulation 1`). If more GPUs are free at launch,
+preserve the same global batch with `64 x 4 x 1` or `32 x 8 x 1`; do not change
+the 40,000-step horizon merely because world size changes.
 
 Project policy requires formal training to use a tested, committed and pushed
 revision. Use `t1.yaml` only after tests, real-data smoke, and a short local

@@ -15,8 +15,8 @@ measurement_noise:
   seed: 20260921
 train:
   max_steps: 40000
-  per_gpu_batch_size: 4
-  gradient_accumulation_steps: 8
+  per_gpu_batch_size: 128
+  gradient_accumulation_steps: 1
   learning_rate: 0.0001
   warmup_steps: 1000
   min_learning_rate: 0.00001
