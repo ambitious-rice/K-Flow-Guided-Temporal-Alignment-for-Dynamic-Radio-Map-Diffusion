@@ -1,0 +1,28 @@
+data:
+  root: /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
+  split_file: configs/splits/m20_formal075_clean16_scene_split.json
+  workers: 8
+  cache_size: 8
+measurement_noise:
+  clean_probability: 0.20
+  nominal_probability: 0.65
+  strong_probability: 0.15
+  nominal_sigma_min: 0.0
+  nominal_sigma_max: 0.05
+  strong_sigma_min: 0.05
+  strong_sigma_max: 0.09
+  reference_variance: 0.0081
+  seed: 20260921
+train:
+  max_steps: 40000
+  per_gpu_batch_size: 4
+  gradient_accumulation_steps: 8
+  learning_rate: 0.0001
+  warmup_steps: 1000
+  min_learning_rate: 0.00001
+  checkpoint_every_steps: 1000
+validation:
+  subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_val.json
+  every_steps: 5000
+runtime:
+  physical_gpus: [0, 1, 2, 3, 4, 5, 6, 7]
