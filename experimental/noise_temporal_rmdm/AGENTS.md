@@ -28,6 +28,5 @@ path allowlists, or duplicated defensive machinery to training code.
   training, hyperparameters, stopping, or checkpoint choice.
 - Formal compute uses tested, committed, GitHub-pushed source and records the
   commit. Apply this during launch/review, not through policy-heavy code.
-- Before formal training, pass CPU backward, real-data one-GPU smoke, short
-  local DDP smoke, checkpoint resume, and deterministic DDIM smoke. Record
-  important jobs under `.agents/runs/noise_temporal_rmdm.yaml`.
+- Keep development-only smoke programs and their tests on the dedicated smoke
+  branch. Record important formal jobs under `.agents/runs/noise_temporal_rmdm.yaml`.

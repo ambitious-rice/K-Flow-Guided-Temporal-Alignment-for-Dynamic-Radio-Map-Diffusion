@@ -159,7 +159,7 @@ class ExperimentConfig:
     final_test: FinalTestConfig = field(default_factory=FinalTestConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
 
-    def validate(self, *, smoke: bool = False) -> None:
+    def validate(self) -> None:
         if self.data.image_size <= 0 or self.data.frames_per_video <= 0:
             raise ValueError("data dimensions must be positive")
         _distribution("sampling", self.sampling.base_rates, self.sampling.base_probabilities)
@@ -229,12 +229,12 @@ def _distribution(name: str, values: list[Any], probabilities: list[float]) -> N
         raise ValueError(f"{name} probabilities must be non-negative and sum to one")
 
 
-def load_config(path: str | Path, *, smoke: bool = False) -> ExperimentConfig:
+def load_config(path: str | Path) -> ExperimentConfig:
     resolved = Path(path).expanduser().resolve()
     with resolved.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle) or {}
     if not isinstance(payload, dict):
         raise TypeError("configuration root must be a mapping")
     config = _from_mapping(ExperimentConfig, payload)
-    config.validate(smoke=smoke)
+    config.validate()
     return config

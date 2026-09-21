@@ -14,16 +14,12 @@ def main() -> None:
     parser.add_argument("--config", required=True)
     parser.add_argument("--repository-root", default=".")
     parser.add_argument("--resume-from", default="")
-    parser.add_argument("--smoke", action="store_true")
-    parser.add_argument("--smoke-data-limit", type=int, default=0)
     args = parser.parse_args()
-    config = load_config(args.config, smoke=args.smoke)
+    config = load_config(args.config)
     run(
         config,
         config_path=Path(args.config),
         repository_root=Path(args.repository_root),
-        smoke=args.smoke,
-        smoke_data_limit=args.smoke_data_limit,
         resume_from=args.resume_from,
     )
 

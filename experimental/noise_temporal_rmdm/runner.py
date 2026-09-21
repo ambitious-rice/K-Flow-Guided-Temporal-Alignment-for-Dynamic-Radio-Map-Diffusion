@@ -8,7 +8,7 @@ import subprocess
 from typing import Any
 
 import torch
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 
 from rmdm.data import SamplingPolicy, WindowDataset
 from rmdm.diffusion import DiffusionProcess
@@ -33,9 +33,9 @@ from .step import training_step
 from .validation import validation_video_ids
 
 
-def output_directory(repository_root: str | Path, *, smoke: bool) -> Path:
+def output_directory(repository_root: str | Path) -> Path:
     root = Path(repository_root).expanduser().resolve()
-    return root / "runs" / "noise_temporal_rmdm" / ("smoke" if smoke else "t1")
+    return root / "runs" / "noise_temporal_rmdm" / "t1"
 
 
 def source_metadata(repository_root: Path) -> dict[str, Any]:
@@ -59,15 +59,13 @@ def run(
     *,
     config_path: str | Path,
     repository_root: str | Path,
-    smoke: bool = False,
-    smoke_data_limit: int = 0,
     resume_from: str = "",
 ) -> None:
     """Run training only; formal DDIM validation is intentionally a separate job."""
 
     repository_root = Path(repository_root).expanduser().resolve()
     source = source_metadata(repository_root)
-    output = output_directory(repository_root, smoke=smoke)
+    output = output_directory(repository_root)
     if not resume_from and output.exists() and any(output.iterdir()):
         raise FileExistsError(f"refusing to overwrite non-empty stage directory: {output}")
     accelerator = make_accelerator(
@@ -111,10 +109,6 @@ def run(
         fixed_starts=tuple(range(config.data.frames_per_video)),
         reader=packed_reader,
     )
-    if smoke:
-        if smoke_data_limit <= 0:
-            raise ValueError("smoke training requires a positive smoke_data_limit")
-        dataset = Subset(dataset, range(min(len(dataset), smoke_data_limit)))
     # Packed arrays make fully random frame order cheap. The video-block order
     # is only the fallback for the original PNG/NPZ layout.
     sampler = None if packed_reader is not None else VideoBlockShuffleSampler(

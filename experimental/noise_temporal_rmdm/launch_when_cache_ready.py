@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-import subprocess
 import sys
 import time
 
@@ -21,9 +20,6 @@ def main() -> None:
     parser.add_argument("--main-process-port", type=int, default=29629)
     parser.add_argument("--poll-seconds", type=int, default=10)
     parser.add_argument("--timeout-seconds", type=int, default=7200)
-    parser.add_argument(
-        "--preflight-config", default="experimental/noise_temporal_rmdm/extended_smoke.yaml"
-    )
     args = parser.parse_args()
 
     repository_root = Path(args.repository_root).expanduser().resolve()
@@ -64,17 +60,6 @@ def main() -> None:
         "--mixed_precision", config.train.mixed_precision, "--dynamo_backend", "no",
         "--main_process_port", str(args.main_process_port),
     ]
-    preflight_config = Path(args.preflight_config).expanduser()
-    if not preflight_config.is_absolute():
-        preflight_config = repository_root / preflight_config
-    preflight = [
-        *launch_prefix,
-        "-m", "experimental.noise_temporal_rmdm.train",
-        "--config", str(preflight_config), "--repository-root", str(repository_root),
-        "--smoke", "--smoke-data-limit", "7680",
-    ]
-    subprocess.run(preflight, cwd=repository_root, env=environment, check=True)
-    print("packed-cache preflight passed; launching 27000-step formal training", flush=True)
     command = [
         *launch_prefix,
         "-m", "experimental.noise_temporal_rmdm.train",

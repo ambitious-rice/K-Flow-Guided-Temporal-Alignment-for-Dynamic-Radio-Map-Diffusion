@@ -43,28 +43,6 @@ must not be used for checkpoint selection.
 
 ## Commands
 
-Synthetic CPU forward/backward:
-
-```bash
-PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
-  -m experimental.noise_temporal_rmdm.smoke \
-  --config experimental/noise_temporal_rmdm/smoke.yaml --backward
-```
-
-One-process real-data smoke (choose an actually idle GPU first):
-
-```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. accelerate launch --num_processes 1 \
-  -m experimental.noise_temporal_rmdm.train \
-  --config experimental/noise_temporal_rmdm/smoke.yaml \
-  --repository-root . --smoke --smoke-data-limit 256
-```
-
-After the two-step checks pass, use `extended_smoke.yaml` for a 20-step,
-three-GPU stability check and then run the complete periodic DDIM20 validation
-protocol against its step-20 checkpoint. This is still a smoke run, not a
-model-quality result.
-
 GPU selection is an operational launch decision: check live utilization, then
 set `CUDA_VISIBLE_DEVICES` and the Accelerate process count. It is deliberately
 not hard-coded or policy-gated in the experiment configuration.
@@ -138,6 +116,7 @@ CUDA_VISIBLE_DEVICES=<idle-gpu> PYTHONPATH=src:. \
 ```
 
 Project policy requires formal training to use a tested, committed and pushed
-revision. Use `t1.yaml` only after tests, real-data smoke, and a short local
-DDP smoke pass. The runner records Git metadata but does not implement policy
-as runtime gate code; see this experiment's scoped `AGENTS.md`.
+revision. Development-only smoke programs and tests live on the dedicated
+`experimental/noise-temporal-rmdm-smoke` branch. The production runner records
+Git metadata but does not implement policy as runtime gate code; see this
+experiment's scoped `AGENTS.md`.
