@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 import torch
 from torch import nn
@@ -10,8 +11,10 @@ from torch import nn
 from experimental.noise_temporal_rmdm import ARCHITECTURE_ID
 from experimental.noise_temporal_rmdm.checkpoint import T1_SCHEMA, build_payload, load
 from experimental.noise_temporal_rmdm.config import ExperimentConfig, MeasurementNoiseConfig
+from experimental.noise_temporal_rmdm.data_order import VideoBlockShuffleSampler
 from experimental.noise_temporal_rmdm.model import build_model
 from experimental.noise_temporal_rmdm.noise import add_fixed_measurement_noise, add_measurement_noise
+from experimental.noise_temporal_rmdm.packed_data import PACKED_SCHEMA, PackedFrameReader, _sha256
 from experimental.noise_temporal_rmdm.step import training_step
 from experimental.noise_temporal_rmdm.validation import validation_video_ids
 from rmdm.data import SamplingPolicy, WindowDataset
@@ -51,6 +54,44 @@ def dense_batch(batch: int = 2, size: int = 8) -> dict:
         "start": torch.arange(batch),
         "frame_names": [[f"frame_{index}.png"] for index in range(batch)],
     }
+
+
+def test_video_block_sampler_is_complete_deterministic_and_cache_friendly() -> None:
+    sampler = VideoBlockShuffleSampler(size=10, frames_per_video=4, seed=17)
+    first = list(sampler)
+    assert sorted(first) == list(range(10))
+    assert first == list(VideoBlockShuffleSampler(size=10, frames_per_video=4, seed=17))
+    blocks = [index // 4 for index in first]
+    assert sum(left != right for left, right in zip(blocks, blocks[1:])) == 2
+
+    sampler.set_epoch(1)
+    second = list(sampler)
+    assert sorted(second) == list(range(10))
+    assert second != first
+
+
+def test_packed_reader_preserves_values_and_frame_identity(tmp_path: Path) -> None:
+    split_file = tmp_path / "split.json"
+    split_file.write_text('{"train": ["scene"]}\n', encoding="utf-8")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    np.save(cache / "building_uint8.npy", np.array([[[0, 255], [255, 0]]], dtype=np.uint8))
+    np.save(cache / "vehicle_uint8.npy", np.array([[[0, 1], [0, 0]], [[1, 0], [0, 0]]], dtype=np.uint8))
+    np.save(cache / "target_uint8.npy", np.array([[[0, 51], [102, 153]], [[255, 204], [153, 102]]], dtype=np.uint8))
+    metadata = {
+        "schema": PACKED_SCHEMA,
+        "split_sha256": _sha256(split_file),
+        "frames_per_video": 2,
+        "image_size": 2,
+        "records": [{"index": 0, "scene_id": "scene", "episode_id": "episode", "tx_id": "tx"}],
+    }
+    (cache / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+    reader = PackedFrameReader(cache, split_file=split_file)
+    result = reader.read_window(reader.records[0], 1, 1)
+    assert result["building"].tolist() == [[[0.0, 1.0], [1.0, 0.0]]]
+    assert result["vehicle"].tolist() == [[[1.0, 0.0], [0.0, 0.0]]]
+    assert np.allclose(result["target"], [[[1.0, 0.8], [0.6, 0.4]]])
+    assert result["frame_names"] == ["scene/episode/tx/frame_000001.png"]
 
 
 def condition_batch(size: int = 16) -> dict:

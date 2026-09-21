@@ -16,7 +16,9 @@ class DataConfig:
     image_size: int = 128
     frames_per_video: int = 100
     workers: int = 8
+    prefetch_factor: int = 2
     cache_size: int = 8
+    packed_cache_root: str = ""
 
 
 @dataclass

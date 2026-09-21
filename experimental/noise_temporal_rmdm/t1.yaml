@@ -1,8 +1,10 @@
 data:
   root: /data_p6/fzj/resources/RMDM/datasets/extracted/DynamicRadioMap/M20_Formal075_RadioMapSeerPack
   split_file: configs/splits/m20_formal075_clean16_scene_split.json
-  workers: 8
+  workers: 16
+  prefetch_factor: 4
   cache_size: 8
+  packed_cache_root: /dev/shm/noise_temporal_clean16_train_v1
 measurement_noise:
   clean_probability: 0.20
   nominal_probability: 0.65

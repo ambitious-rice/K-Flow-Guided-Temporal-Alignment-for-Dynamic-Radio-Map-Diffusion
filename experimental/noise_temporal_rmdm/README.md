@@ -69,6 +69,35 @@ GPU selection is an operational launch decision: check live utilization, then
 set `CUDA_VISIBLE_DEVICES` and the Accelerate process count. It is deliberately
 not hard-coded or policy-gated in the experiment configuration.
 
+The formal loader uses a generated contiguous uint8 cache in `/dev/shm` so the
+900,000 frames can remain globally shuffled without reopening individual PNGs
+or decompressing whole traffic NPZ files per sample. Build it once per boot:
+
+```bash
+PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
+  -m experimental.noise_temporal_rmdm.build_cache \
+  --config experimental/noise_temporal_rmdm/t1.yaml \
+  --output /dev/shm/noise_temporal_clean16_train_v1 --workers 8
+```
+
+The builder publishes `metadata.json` only after every array is complete, and
+the runner verifies the split-file digest before training. The original PNG/NPZ
+layout remains unchanged. If no packed cache is configured, the fallback loader
+shuffles video blocks to preserve NPZ cache locality.
+
+To launch automatically as soon as a concurrently built cache becomes ready:
+
+```bash
+PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
+  -m experimental.noise_temporal_rmdm.launch_when_cache_ready \
+  --config experimental/noise_temporal_rmdm/t1.yaml --gpus 0,2,4
+```
+
+The cache is disposable and consumes about 30 GB of host RAM. Keep it while a
+resume may still be needed. After the formal checkpoint is safely complete and
+no further resume is planned, reclaim it with the exact scoped command:
+`rm -rf /dev/shm/noise_temporal_clean16_train_v1`. A reboot also clears it.
+
 The checked-in formal target uses the currently tested three-GPU layout:
 `128 x 3 GPUs x accumulation 1`, global batch 384, for 27,000 optimizer steps.
 This is 10.368 million frame presentations, or about 11.52 passes over the

@@ -26,7 +26,9 @@ from rmdm_hvdit_v4_joint.training.engine import (
 
 from .checkpoint import load, save
 from .config import ExperimentConfig
+from .data_order import VideoBlockShuffleSampler
 from .model import build_model, parameter_counts
+from .packed_data import PackedFrameReader
 from .step import training_step
 from .validation import validation_video_ids
 
@@ -94,25 +96,37 @@ def run(
     split_file = Path(config.data.split_file)
     if not split_file.is_absolute():
         split_file = repository_root / split_file
+    packed_reader = (
+        PackedFrameReader(config.data.packed_cache_root, split_file=split_file)
+        if config.data.packed_cache_root else None
+    )
     dataset: Any = WindowDataset(
-        root=config.data.root,
+        root=None if packed_reader is not None else config.data.root,
         split="train",
-        split_file=str(split_file),
+        split_file=None if packed_reader is not None else str(split_file),
         window_size=1,
         seed=config.sampling.seed,
         cache_size=config.data.cache_size,
         include_tx=False,
         fixed_starts=tuple(range(config.data.frames_per_video)),
+        reader=packed_reader,
     )
     if smoke:
         if smoke_data_limit <= 0:
             raise ValueError("smoke training requires a positive smoke_data_limit")
         dataset = Subset(dataset, range(min(len(dataset), smoke_data_limit)))
+    # Packed arrays make fully random frame order cheap. The video-block order
+    # is only the fallback for the original PNG/NPZ layout.
+    sampler = None if packed_reader is not None else VideoBlockShuffleSampler(
+        len(dataset), frames_per_video=config.data.frames_per_video, seed=config.train.seed
+    )
     loader = DataLoader(
         dataset,
         batch_size=config.train.per_gpu_batch_size,
-        shuffle=True,
+        sampler=sampler,
+        shuffle=packed_reader is not None,
         num_workers=config.data.workers,
+        prefetch_factor=config.data.prefetch_factor if config.data.workers > 0 else None,
         pin_memory=True,
         persistent_workers=config.data.workers > 0,
         drop_last=True,
