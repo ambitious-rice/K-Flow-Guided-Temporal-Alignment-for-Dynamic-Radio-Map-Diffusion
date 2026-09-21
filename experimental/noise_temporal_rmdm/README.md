@@ -111,4 +111,4 @@ CUDA_VISIBLE_DEVICES=<idle-gpu> PYTHONPATH=src:. \
 Project policy requires formal training to use a tested, committed and pushed
 revision. Use `t1.yaml` only after tests, real-data smoke, and a short local
 DDP smoke pass. The runner records Git metadata but does not implement policy
-as runtime gate code; see the repository-root `AGENTS.md`.
+as runtime gate code; see this experiment's scoped `AGENTS.md`.
