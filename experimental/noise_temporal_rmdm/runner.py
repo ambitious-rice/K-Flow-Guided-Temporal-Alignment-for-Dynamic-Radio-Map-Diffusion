@@ -170,8 +170,7 @@ def run(
     optimizer.zero_grad(set_to_none=True)
     last_microbatch = offset
     while global_step < config.train.max_steps:
-        base_dataset = dataset.dataset if isinstance(dataset, Subset) else dataset
-        base_dataset.set_epoch(epoch)
+        dataset.set_epoch(epoch)
         sampling.set_epoch(epoch)
         if hasattr(loader, "set_epoch"):
             loader.set_epoch(epoch)
