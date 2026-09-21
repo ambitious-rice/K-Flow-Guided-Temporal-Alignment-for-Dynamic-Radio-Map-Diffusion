@@ -37,7 +37,9 @@ does not preserve BF16 autocast; the target 96 GB GPUs do not require it.
 `configs/splits/m20_formal075_clean16_scene_split.json` excludes all four
 user-verified invalid scenes. The split has 12 train scenes, two validation
 scenes, two final-test scenes, and no scene overlap. The tracked validation
-manifest deterministically selects 10 videos from each validation scene.
+manifest deterministically selects 10 videos from each validation scene. A
+separate manifest selects 10 videos from each final-test scene; test samples
+must not be used for checkpoint selection.
 
 ## Commands
 
@@ -62,12 +64,44 @@ GPU selection is an operational launch decision: check live utilization, then
 set `CUDA_VISIBLE_DEVICES` and the Accelerate process count. It is deliberately
 not hard-coded or policy-gated in the experiment configuration.
 
-The formal target is global batch 256 for 40,000 optimizer steps: 10.24
-million frame presentations, or about 11.38 passes over the 900,000-frame
-Clean16 training split. The checked-in config is the currently tested two-GPU
-layout (`128 x 2 GPUs x accumulation 1`). If more GPUs are free at launch,
-preserve the same global batch with `64 x 4 x 1` or `32 x 8 x 1`; do not change
-the 40,000-step horizon merely because world size changes.
+The checked-in formal target uses the currently tested three-GPU layout:
+`128 x 3 GPUs x accumulation 1`, global batch 384, for 27,000 optimizer steps.
+This is 10.368 million frame presentations, or about 11.52 passes over the
+900,000-frame Clean16 training split. If world size changes, preserve roughly
+the same sample exposure: two GPUs use `128 x 2` for 40,000 steps; four, six,
+or eight GPUs can use per-GPU batches 96, 64, or 48 for 27,000 steps.
+
+## Evaluation schedule
+
+Every 3,375 steps, retain a milestone checkpoint and run deterministic quick
+validation on the two validation scenes: 10 videos per scene, frames 0 and 50,
+sampling rates 1% and 3%, sigma values 0/0.03/0.05/0.09, and DDIM20. This is
+the only protocol used to select a checkpoint.
+
+```bash
+CUDA_VISIBLE_DEVICES=<idle-gpu> PYTHONPATH=src:. \
+  /data_p6/fzj/conda/envs/RMDM/bin/python \
+  -m experimental.noise_temporal_rmdm.validate \
+  --config experimental/noise_temporal_rmdm/t1.yaml \
+  --checkpoint runs/noise_temporal_rmdm/t1/checkpoints/step_003375.pth \
+  --output runs/noise_temporal_rmdm/t1/validation/step_003375.json \
+  --split val
+```
+
+After selection, run the final partial test once: two untouched test scenes,
+10 videos per scene, frames 0/25/50/75, rates 1%/2%/3%, all six configured
+sigma levels, and DDIM20. Test results are report-only and never feed back
+into training or checkpoint choice.
+
+```bash
+CUDA_VISIBLE_DEVICES=<idle-gpu> PYTHONPATH=src:. \
+  /data_p6/fzj/conda/envs/RMDM/bin/python \
+  -m experimental.noise_temporal_rmdm.validate \
+  --config experimental/noise_temporal_rmdm/t1.yaml \
+  --checkpoint <validation-selected-checkpoint> \
+  --output runs/noise_temporal_rmdm/t1/final_test.json \
+  --split test
+```
 
 Project policy requires formal training to use a tested, committed and pushed
 revision. Use `t1.yaml` only after tests, real-data smoke, and a short local

@@ -15,6 +15,7 @@ def main() -> None:
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--repository-root", default=".")
+    parser.add_argument("--split", choices=("val", "test"), default="val")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--ddim-steps", type=int, default=0)
     parser.add_argument("--max-batches", type=int, default=0)
@@ -25,6 +26,7 @@ def main() -> None:
         checkpoint_path=args.checkpoint,
         repository_root=args.repository_root,
         output_path=args.output,
+        evaluation_split=args.split,
         device=args.device,
         ddim_steps=args.ddim_steps or None,
         max_batches=args.max_batches,

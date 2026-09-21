@@ -112,11 +112,31 @@ class ValidationConfig:
         "town01_opt_junction_0087", "town05_opt_junction_0053",
         "town05_opt_junction_0838", "town05_opt_junction_1427",
     ])
+    rates: list[float] = field(default_factory=lambda: [1.0, 3.0])
+    noise_standard_deviations: list[float] = field(default_factory=lambda: [0.0, 0.03, 0.05, 0.09])
+    frame_starts: list[int] = field(default_factory=lambda: [0, 50])
+    batch_size: int = 4
+    ddim_steps: int = 20
+    every_steps: int = 5_000
+
+
+@dataclass
+class FinalTestConfig:
+    subset_manifest: str = "configs/manifests/noise_temporal_rmdm_clean16_test.json"
+    included_scenes: list[str] = field(default_factory=lambda: [
+        "town04_opt_junction_0053", "town05_opt_junction_0396"
+    ])
+    excluded_scenes: list[str] = field(default_factory=lambda: [
+        "town01_opt_junction_0087", "town05_opt_junction_0053",
+        "town05_opt_junction_0838", "town05_opt_junction_1427",
+    ])
     rates: list[float] = field(default_factory=lambda: [1.0, 2.0, 3.0])
-    noise_standard_deviations: list[float] = field(default_factory=lambda: [0.0, 0.01, 0.03, 0.05, 0.07, 0.09])
+    noise_standard_deviations: list[float] = field(default_factory=lambda: [
+        0.0, 0.01, 0.03, 0.05, 0.07, 0.09
+    ])
     frame_starts: list[int] = field(default_factory=lambda: [0, 25, 50, 75])
     batch_size: int = 4
-    every_steps: int = 5_000
+    ddim_steps: int = 20
 
 
 @dataclass
@@ -134,6 +154,7 @@ class ExperimentConfig:
     loss: LossConfig = field(default_factory=LossConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
     validation: ValidationConfig = field(default_factory=ValidationConfig)
+    final_test: FinalTestConfig = field(default_factory=FinalTestConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
 
     def validate(self, *, smoke: bool = False) -> None:
@@ -172,6 +193,12 @@ class ExperimentConfig:
             raise ValueError("validation included/excluded scenes overlap")
         if any(value < 0 for value in self.validation.noise_standard_deviations):
             raise ValueError("validation noise standard deviations must be non-negative")
+        if set(self.final_test.included_scenes) & set(self.final_test.excluded_scenes):
+            raise ValueError("test included/excluded scenes overlap")
+        if any(value < 0 for value in self.final_test.noise_standard_deviations):
+            raise ValueError("test noise standard deviations must be non-negative")
+        if self.validation.ddim_steps <= 0 or self.final_test.ddim_steps <= 0:
+            raise ValueError("evaluation DDIM steps must be positive")
         if smoke and self.train.max_steps > 2:
             raise ValueError("smoke configuration permits at most two updates")
         if not smoke and self.train.max_steps <= 2:

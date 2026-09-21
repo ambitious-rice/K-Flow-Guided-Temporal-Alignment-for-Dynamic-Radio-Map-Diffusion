@@ -103,6 +103,22 @@ def test_validation_manifest_uses_only_clean16_val_scenes() -> None:
     }
 
 
+def test_final_test_manifest_is_disjoint_and_report_only() -> None:
+    config = ExperimentConfig()
+    manifest = REPOSITORY_ROOT / "configs/manifests/noise_temporal_rmdm_clean16_test.json"
+    selected = validation_video_ids(
+        manifest,
+        included_scenes=config.final_test.included_scenes,
+        excluded_scenes=config.final_test.excluded_scenes,
+    )
+    assert len(selected) == 20
+    assert {value.split("/", 1)[0] for value in selected} == {
+        "town04_opt_junction_0053", "town05_opt_junction_0396"
+    }
+    assert set(config.validation.included_scenes).isdisjoint(config.final_test.included_scenes)
+    assert config.validation.ddim_steps == config.final_test.ddim_steps == 20
+
+
 def test_measurement_noise_is_deterministic_and_masked() -> None:
     batch = dense_batch()
     mask = torch.zeros_like(batch["target"])

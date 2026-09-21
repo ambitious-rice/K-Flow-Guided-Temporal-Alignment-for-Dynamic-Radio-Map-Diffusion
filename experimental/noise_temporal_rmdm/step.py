@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 from rmdm.data import SamplingPolicy, derive_seed
 from rmdm.diffusion import DiffusionProcess
-from utils import cal_pinn_components
+from utils import cal_pinn_without_source
 
 from .config import ExperimentConfig
 from .noise import add_measurement_noise
@@ -60,15 +60,12 @@ def training_step(
     calibration_loss = F.mse_loss(cal.float(), target.float())
     obstacle = ((sparse["building"] > 0.5) | (sparse["vehicle"] > 0.5)).to(cal.dtype)
     batch, time, _, height, width = cal.shape
-    # Tx is intentionally unknown. Keep only the legacy equation and obstacle
-    # terms; pass an all-zero placeholder and discard the source component.
-    equation_loss, obstacle_loss, _ = cal_pinn_components(
+    # Tx is intentionally unknown: only equation and obstacle terms remain.
+    pinn_loss = cal_pinn_without_source(
         cal.reshape(batch * time, height, width),
         obstacle.reshape(batch * time, height, width),
-        torch.zeros_like(cal).reshape(batch * time, height, width),
         k=config.loss.pinn_k,
-    )
-    pinn_loss = (equation_loss + obstacle_loss).mean().float()
+    ).mean().float()
     loss = (
         config.loss.diffusion_weight * diffusion_loss
         + config.loss.calibration_weight * calibration_loss

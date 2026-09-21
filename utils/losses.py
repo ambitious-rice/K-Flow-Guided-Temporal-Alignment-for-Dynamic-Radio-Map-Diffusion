@@ -59,7 +59,7 @@ def cal_pinn_masked(cal, valid_mask, shooter, k=1.0):
     return loss_pde + source_loss
 
 
-def cal_pinn_components(cal, buildings, shooter, k=1.0, k_building=1.0):
+def cal_pinn_components(cal, buildings, shooter=None, k=1.0, k_building=1.0):
     """Return the governing-equation and semantic-anchor terms separately.
 
     The legacy ``cal_pinn`` bundled all three terms.  Keeping the components
@@ -67,12 +67,11 @@ def cal_pinn_components(cal, buildings, shooter, k=1.0, k_building=1.0):
     and transmitter anchors remain unchanged and only the equation residual
     is exchanged.
     """
-    if cal.ndim != 3 or buildings.ndim != 3 or shooter.ndim != 3:
-        raise ValueError("cal, buildings and shooter must be shaped (B, H, W)")
+    if cal.ndim != 3 or buildings.ndim != 3 or (shooter is not None and shooter.ndim != 3):
+        raise ValueError("cal, buildings and optional shooter must be shaped (B, H, W)")
 
     cal_t = cal.unsqueeze(1)
     buildings_t = buildings.unsqueeze(1)
-    shooter_t = shooter.unsqueeze(1)
 
     device = cal_t.device
     dtype = cal_t.dtype
@@ -83,7 +82,6 @@ def cal_pinn_components(cal, buildings, shooter, k=1.0, k_building=1.0):
     lap = F.conv2d(cal_t, lap_kernel, padding=1)
 
     buildings_mask = (buildings_t > 0.5)
-    shooter_mask = (shooter_t > 0.5)
 
     k_tensor = torch.tensor(float(k), device=device, dtype=dtype)
     k_building_tensor = torch.tensor(float(k_building), device=device, dtype=dtype)
@@ -95,9 +93,21 @@ def cal_pinn_components(cal, buildings, shooter, k=1.0, k_building=1.0):
     bc_num = buildings_mask.sum(dim=(1,2,3)).clamp_min(1)
     obstacle_loss = (cal_t.pow(2) * buildings_mask).sum(dim=(1,2,3)) / bc_num
 
-    src_num = shooter_mask.sum(dim=(1,2,3)).clamp_min(1)
-    source_loss = ((cal_t - 1.0).pow(2) * shooter_mask).sum(dim=(1,2,3)) / src_num
+    if shooter is None:
+        source_loss = torch.zeros_like(equation_loss)
+    else:
+        shooter_mask = (shooter.unsqueeze(1) > 0.5)
+        src_num = shooter_mask.sum(dim=(1,2,3)).clamp_min(1)
+        source_loss = ((cal_t - 1.0).pow(2) * shooter_mask).sum(dim=(1,2,3)) / src_num
     return equation_loss, obstacle_loss, source_loss
+
+
+def cal_pinn_without_source(cal, buildings, k=1.0, k_building=1.0):
+    """Legacy equation and obstacle terms with no transmitter anchor."""
+    equation_loss, obstacle_loss, _ = cal_pinn_components(
+        cal, buildings, shooter=None, k=k, k_building=k_building
+    )
+    return equation_loss + obstacle_loss
 
 
 def cal_pinn(cal, buildings, shooter, k=1.0, k_building=1.0):

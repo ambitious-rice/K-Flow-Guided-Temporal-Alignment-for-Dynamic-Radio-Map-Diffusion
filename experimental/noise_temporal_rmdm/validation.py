@@ -60,14 +60,18 @@ def run_validation(
     checkpoint_path: str | Path,
     repository_root: str | Path,
     output_path: str | Path,
+    evaluation_split: str = "val",
     device: str = "cuda",
     ddim_steps: int | None = None,
     max_batches: int = 0,
 ) -> dict:
-    """Evaluate fixed rates/noise levels with deterministic masks and DDIM noise."""
+    """Evaluate the fixed periodic-val or final-partial-test protocol."""
 
     root = Path(repository_root).expanduser().resolve()
-    manifest = Path(config.validation.subset_manifest)
+    if evaluation_split not in {"val", "test"}:
+        raise ValueError("evaluation_split must be val or test")
+    protocol = config.validation if evaluation_split == "val" else config.final_test
+    manifest = Path(protocol.subset_manifest)
     if not manifest.is_absolute():
         manifest = root / manifest
     split_file = Path(config.data.split_file)
@@ -75,23 +79,23 @@ def run_validation(
         split_file = root / split_file
     video_ids = validation_video_ids(
         manifest,
-        included_scenes=config.validation.included_scenes,
-        excluded_scenes=config.validation.excluded_scenes,
+        included_scenes=protocol.included_scenes,
+        excluded_scenes=protocol.excluded_scenes,
     )
     dataset = WindowDataset(
         root=config.data.root,
-        split="val",
+        split=evaluation_split,
         split_file=str(split_file),
         window_size=1,
         seed=config.sampling.seed,
         cache_size=config.data.cache_size,
         include_tx=False,
-        fixed_starts=config.validation.frame_starts,
+        fixed_starts=protocol.frame_starts,
         video_ids=video_ids,
     )
     loader = DataLoader(
         dataset,
-        batch_size=config.validation.batch_size,
+        batch_size=protocol.batch_size,
         shuffle=False,
         num_workers=config.data.workers,
         pin_memory=True,
@@ -101,11 +105,11 @@ def run_validation(
     model = build_model(config).to(torch_device)
     payload = load(checkpoint_path, model)
     model.eval()
-    sampling = SamplingPolicy(config.sampling, split="validation")
+    sampling = SamplingPolicy(config.sampling, split=evaluation_split)
     sampler = DDIMSampler(config.diffusion)
     results = []
-    for rate in config.validation.rates:
-        for sigma in config.validation.noise_standard_deviations:
+    for rate in protocol.rates:
+        for sigma in protocol.noise_standard_deviations:
             mse_sum = mae_sum = psnr_sum = 0.0
             count = 0
             for batch_index, dense in enumerate(loader):
@@ -122,7 +126,7 @@ def run_validation(
                     rate=float(rate), seed=config.train.seed,
                 )
                 generated = sampler.sample(
-                    model, sparse, initial_noise=initial, steps=ddim_steps or config.diffusion.ddim_steps
+                    model, sparse, initial_noise=initial, steps=ddim_steps or protocol.ddim_steps
                 )
                 difference = (generated.float() - sparse["target"].float()).flatten(1)
                 mse = difference.square().mean(1)
@@ -143,10 +147,12 @@ def run_validation(
                 "psnr": psnr_sum / count,
             })
     summary = {
-        "schema": "noise_temporal_rmdm_t1_validation_v1",
+        "schema": "noise_temporal_rmdm_t1_evaluation_v1",
+        "evaluation_split": evaluation_split,
+        "selection_role": "checkpoint_selection" if evaluation_split == "val" else "final_report_only",
         "checkpoint": str(Path(checkpoint_path).expanduser().resolve()),
         "checkpoint_step": int(payload["global_step"]),
-        "ddim_steps": int(ddim_steps or config.diffusion.ddim_steps),
+        "ddim_steps": int(ddim_steps or protocol.ddim_steps),
         "tx_input": False,
         "source_loss": False,
         "results": results,

@@ -11,6 +11,7 @@ __all__ = [
     'nn',
     'cal_pinn',
     'cal_pinn_components',
+    'cal_pinn_without_source',
     'cal_pinn_masked',
     'full_image_hessian_charbonnier',
     'masked_hessian_charbonnier',
@@ -27,6 +28,9 @@ def __getattr__(name):
     elif name == 'cal_pinn_components':
         from .losses import cal_pinn_components
         return cal_pinn_components
+    elif name == 'cal_pinn_without_source':
+        from .losses import cal_pinn_without_source
+        return cal_pinn_without_source
     elif name == 'cal_pinn_masked':
         from .losses import cal_pinn_masked
         return cal_pinn_masked

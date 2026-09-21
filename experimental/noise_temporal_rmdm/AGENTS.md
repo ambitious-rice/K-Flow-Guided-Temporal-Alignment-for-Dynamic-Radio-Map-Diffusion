@@ -23,6 +23,9 @@ path allowlists, or duplicated defensive machinery to training code.
   or adapters without experiment-backed need.
 - Use the tracked Clean16 split. Its four excluded scenes never enter train,
   validation, or test; keep the splits scene-disjoint and reserve test scenes.
+- Use periodic DDIM20 validation only to select checkpoints. Run the tracked
+  partial DDIM20 test once after selection; test results never feed back into
+  training, hyperparameters, stopping, or checkpoint choice.
 - Formal compute uses tested, committed, GitHub-pushed source and records the
   commit. Apply this during launch/review, not through policy-heavy code.
 - Before formal training, pass CPU backward, real-data one-GPU smoke, short
