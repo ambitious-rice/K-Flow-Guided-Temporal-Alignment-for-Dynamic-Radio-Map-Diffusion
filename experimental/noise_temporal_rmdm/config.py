@@ -122,7 +122,6 @@ class ValidationConfig:
 @dataclass
 class RuntimeConfig:
     output_root: str = "runs/noise_temporal_rmdm"
-    physical_gpus: list[int] = field(default_factory=lambda: [0])
 
 
 @dataclass

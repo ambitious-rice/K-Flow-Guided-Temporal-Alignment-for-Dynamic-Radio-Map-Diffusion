@@ -24,5 +24,3 @@ train:
 validation:
   subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_val.json
   every_steps: 5000
-runtime:
-  physical_gpus: [0, 1, 2, 3, 4, 5, 6, 7]

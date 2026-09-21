@@ -13,5 +13,3 @@ train:
   checkpoint_every_steps: 1
 validation:
   subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_val.json
-runtime:
-  physical_gpus: [0]

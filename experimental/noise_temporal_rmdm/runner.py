@@ -19,7 +19,6 @@ from rmdm_hvdit_v4_joint.training.engine import (
     make_optimizer,
     prepare_model_optimizer_loader,
     require_scheduler_global_step,
-    require_visible_physical_gpus,
     seed_everything,
     step_scheduler_on_global_update,
     write_json_atomic,
@@ -64,7 +63,6 @@ def run(
 ) -> None:
     """Run training only; formal DDIM validation is intentionally a separate job."""
 
-    require_visible_physical_gpus(list(config.runtime.physical_gpus))
     repository_root = Path(repository_root).expanduser().resolve()
     source = source_metadata(repository_root)
     output = output_directory(repository_root, smoke=smoke)
@@ -75,8 +73,6 @@ def run(
         gradient_accumulation_steps=config.train.gradient_accumulation_steps,
         data_seed=config.train.seed,
     )
-    if accelerator.num_processes != len(config.runtime.physical_gpus):
-        raise RuntimeError("Accelerate world size does not match runtime.physical_gpus")
     seed_everything(config.train.seed)
     model = build_model(config)
     trainable, total = parameter_counts(model)

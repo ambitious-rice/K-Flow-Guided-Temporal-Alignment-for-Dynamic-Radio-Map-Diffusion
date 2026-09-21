@@ -58,6 +58,10 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src:. accelerate launch --num_processes 1 \
   --repository-root . --smoke --smoke-data-limit 4
 ```
 
+GPU selection is an operational launch decision: check live utilization, then
+set `CUDA_VISIBLE_DEVICES` and the Accelerate process count. It is deliberately
+not hard-coded or policy-gated in the experiment configuration.
+
 Project policy requires formal training to use a tested, committed and pushed
 revision. Use `t1.yaml` only after tests, real-data smoke, and a short local
 DDP smoke pass. The runner records Git metadata but does not implement policy
