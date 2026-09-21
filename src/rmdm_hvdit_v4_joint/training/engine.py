@@ -48,6 +48,7 @@ def make_accelerator(
     gradient_accumulation_steps: int,
     even_batches: bool = True,
     data_seed: int,
+    find_unused_parameters: bool = True,
 ) -> Accelerator:
     return Accelerator(
         mixed_precision=mixed_precision,
@@ -63,7 +64,7 @@ def make_accelerator(
         # The exact legacy HWM contains a small number of registered branch
         # parameters that are not active in every forward path.  This mirrors
         # the original RMDM trainer's required DDP setting.
-        kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)],
+        kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=find_unused_parameters)],
     )
 
 

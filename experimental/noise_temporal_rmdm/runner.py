@@ -72,6 +72,7 @@ def run(
         mixed_precision=config.train.mixed_precision,
         gradient_accumulation_steps=config.train.gradient_accumulation_steps,
         data_seed=config.train.seed,
+        find_unused_parameters=False,
     )
     seed_everything(config.train.seed)
     model = build_model(config)
