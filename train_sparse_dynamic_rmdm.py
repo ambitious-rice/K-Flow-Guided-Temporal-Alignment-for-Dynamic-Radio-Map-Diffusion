@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import random
 import sys
@@ -41,6 +42,7 @@ from utils import (
     cal_pinn_without_source,
     masked_mean,
 )
+from rmdm_hvdit_v4_joint.training.engine import cosine_scheduler
 
 
 DEFAULT_DATA_DIR = "/data/fzj/CARLA_0.9.15/datasets/DynamicRadioMap/M20_Formal075_RadioMapSeerPack"
@@ -53,6 +55,15 @@ def write_json_atomic(path: Path, payload: dict) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(temporary, path)
+
+
+def add_boolean_argument(parser: argparse.ArgumentParser, name: str, *, default: bool) -> None:
+    """Provide BooleanOptionalAction semantics on the remote Python 3.8 environment."""
+    destination = name.replace("-", "_")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(f"--{name}", dest=destination, action="store_true")
+    group.add_argument(f"--no-{name}", dest=destination, action="store_false")
+    parser.set_defaults(**{destination: default})
 
 
 def parse_args() -> argparse.Namespace:
@@ -79,7 +90,7 @@ def parse_args() -> argparse.Namespace:
         help="Keep the ground-truth Tx heatmap only for the PINN source-anchor loss.",
     )
     parser.add_argument("--sample_rates", default="1,2,3,4,5,6,7,8,9,10")
-    parser.add_argument("--mask_seed", type=int, default=20260714)
+    parser.add_argument("--mask_seed", type=int, default=20260717)
 
     parser.add_argument("--num_channels", type=int, default=96)
     parser.add_argument("--num_res_blocks", type=int, default=2)
@@ -89,11 +100,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num_heads", type=int, default=4)
     parser.add_argument("--num_head_channels", type=int, default=-1)
     parser.add_argument("--num_heads_upsample", type=int, default=-1)
-    parser.add_argument("--use_checkpoint", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--use_scale_shift_norm", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--resblock_updown", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--use_fp16", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--use_new_attention_order", action=argparse.BooleanOptionalAction, default=False)
+    add_boolean_argument(parser, "use_checkpoint", default=False)
+    add_boolean_argument(parser, "use_scale_shift_norm", default=True)
+    add_boolean_argument(parser, "resblock_updown", default=False)
+    add_boolean_argument(parser, "use_fp16", default=False)
+    add_boolean_argument(parser, "use_new_attention_order", default=False)
 
     parser.add_argument("--diffusion_steps", type=int, default=1000)
     parser.add_argument("--noise_schedule", choices=("linear", "cosine"), default="linear")
@@ -106,14 +117,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pinn_k", type=float, default=0.2)
     parser.add_argument("--pinn_weight", type=float, default=1.0)
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--weight_decay", type=float, default=1e-4)
+    parser.add_argument("--adam_beta1", type=float, default=0.9)
+    parser.add_argument("--adam_beta2", type=float, default=0.95)
+    parser.add_argument("--adam_epsilon", type=float, default=1e-8)
+    parser.add_argument("--weight_decay", type=float, default=1e-2)
+    parser.add_argument("--gradient_clip_norm", type=float, default=1.0)
+    parser.add_argument("--warmup_steps", type=int, default=675)
+    parser.add_argument("--min_lr", type=float, default=1e-5)
     parser.add_argument("--batch_size", type=int, default=32, help="Per-process batch size")
     parser.add_argument("--workers", type=int, default=6, help="Workers per process")
+    parser.add_argument("--prefetch_factor", type=int, default=4)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max_steps", type=int, default=0, help="Optional global optimizer-step cap; 0 means all epochs")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
     parser.add_argument("--mixed_precision", choices=("no", "fp16", "bf16"), default="bf16")
-    parser.add_argument("--seed", type=int, default=20260714)
+    parser.add_argument("--seed", type=int, default=20260921)
     parser.add_argument("--log_interval", type=int, default=100)
     parser.add_argument("--save_every_epochs", type=int, default=1)
     parser.add_argument("--save_dir", default="./runs/rmdm_sf_sparse")
@@ -175,18 +193,20 @@ def pinn_tx_heatmap(
     return tx_heatmap
 
 
-def load_checkpoint(model, optimizer, checkpoint_path: str) -> tuple[int, int]:
+def load_checkpoint(model, optimizer, lr_scheduler, checkpoint_path: str) -> tuple[int, int]:
     state = torch.load(checkpoint_path, map_location="cpu")
     if isinstance(state, dict) and "model" in state:
         model.load_state_dict(state["model"], strict=True)
         if "optimizer" in state:
             optimizer.load_state_dict(state["optimizer"])
+        if "lr_scheduler" in state:
+            lr_scheduler.load_state_dict(state["lr_scheduler"])
         return int(state.get("epoch", 0)), int(state.get("global_step", 0))
     model.load_state_dict(state, strict=True)
     return 0, 0
 
 
-def save_checkpoint(accelerator, model, optimizer, args, epoch: int, global_step: int, path: Path) -> None:
+def save_checkpoint(accelerator, model, optimizer, lr_scheduler, args, epoch: int, global_step: int, path: Path) -> None:
     accelerator.wait_for_everyone()
     if accelerator.is_main_process:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -195,6 +215,7 @@ def save_checkpoint(accelerator, model, optimizer, args, epoch: int, global_step
                 "schema": "rmdm_sf_sparse_checkpoint_v1",
                 "model": accelerator.unwrap_model(model).state_dict(),
                 "optimizer": optimizer.state_dict(),
+                "lr_scheduler": lr_scheduler.state_dict(),
                 "epoch": epoch,
                 "global_step": global_step,
                 "args": vars(args),
@@ -289,11 +310,28 @@ def main() -> None:
         shuffle=True,
         num_workers=args.workers,
         pin_memory=True,
-        persistent_workers=False,
+        prefetch_factor=args.prefetch_factor if args.workers > 0 else None,
+        persistent_workers=args.workers > 0,
         drop_last=True,
     )
     model = build_unet_from_config(build_model_config(args))
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=args.lr,
+        betas=(args.adam_beta1, args.adam_beta2),
+        eps=args.adam_epsilon,
+        weight_decay=args.weight_decay,
+    )
+    scheduled_steps = args.max_steps or args.epochs * math.ceil(
+        len(loader) / (accelerator.num_processes * args.gradient_accumulation_steps)
+    )
+    lr_scheduler = cosine_scheduler(
+        optimizer,
+        total_steps=scheduled_steps,
+        warmup_steps=args.warmup_steps,
+        base_learning_rate=args.lr,
+        min_learning_rate=args.min_lr,
+    )
     beta_schedule = "linear" if args.noise_schedule == "linear" else "squaredcos_cap_v2"
     scheduler = DDPMScheduler(
         num_train_timesteps=args.diffusion_steps,
@@ -304,7 +342,7 @@ def main() -> None:
     start_epoch = 0
     global_step = 0
     if args.resume_from:
-        start_epoch, global_step = load_checkpoint(model, optimizer, args.resume_from)
+        start_epoch, global_step = load_checkpoint(model, optimizer, lr_scheduler, args.resume_from)
         if accelerator.is_main_process:
             print(f"[resume] {args.resume_from}: epoch={start_epoch}, global_step={global_step}", flush=True)
 
@@ -455,7 +493,9 @@ def main() -> None:
 
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
+                    accelerator.clip_grad_norm_(model.parameters(), args.gradient_clip_norm)
                     optimizer.step()
+                    lr_scheduler.step()
                     optimizer.zero_grad(set_to_none=True)
 
             detached = torch.stack([loss.detach(), loss_diff.detach(), loss_cal.detach(), loss_pinn.detach()])
@@ -466,7 +506,8 @@ def main() -> None:
                 print(
                     f"epoch={epoch + 1}/{args.epochs} step={global_step} "
                     f"loss={loss.item():.5f} diff={loss_diff.item():.5f} cal={loss_cal.item():.5f} "
-                    f"pinn={loss_pinn.item():.5f} p_mean={rates.mean().item():.2f}%",
+                    f"pinn={loss_pinn.item():.5f} p_mean={rates.mean().item():.2f}% "
+                    f"lr={lr_scheduler.get_last_lr()[0]:.8f}",
                     flush=True,
                 )
             if accelerator.sync_gradients:
@@ -494,8 +535,14 @@ def main() -> None:
             print("[epoch] " + json.dumps(metrics), flush=True)
 
         if (epoch + 1) % args.save_every_epochs == 0 or epoch + 1 == args.epochs:
-            save_checkpoint(accelerator, model, optimizer, args, epoch + 1, global_step, save_dir / f"epoch_{epoch + 1:03d}.pth")
-            save_checkpoint(accelerator, model, optimizer, args, epoch + 1, global_step, save_dir / "last.pth")
+            save_checkpoint(
+                accelerator, model, optimizer, lr_scheduler, args, epoch + 1, global_step,
+                save_dir / f"epoch_{epoch + 1:03d}.pth",
+            )
+            save_checkpoint(
+                accelerator, model, optimizer, lr_scheduler, args, epoch + 1, global_step,
+                save_dir / "last.pth",
+            )
         completed_epochs = epoch + 1
         if reached_step_limit:
             stopped_early = True
