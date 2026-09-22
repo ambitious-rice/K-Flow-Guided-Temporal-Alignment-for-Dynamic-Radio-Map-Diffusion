@@ -1,0 +1,3726 @@
+{
+  "schema": "noise_temporal_rmdm_test_subset_v1",
+  "selection_seed": 20260922,
+  "selection_algorithm": "Seeded Python shuffle, retain original partial-test videos, choose 675 of 750 videos per test scene, reshuffle and partition 410/265 per scene",
+  "frame_starts": [
+    0,
+    20,
+    40,
+    60,
+    80
+  ],
+  "stage_a": {
+    "videos": [
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000109",
+        "tx_id": "tx_14",
+        "video_id": "town04_opt_junction_0053/episode_000109/tx_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000079",
+        "tx_id": "tx_24",
+        "video_id": "town04_opt_junction_0053/episode_000079/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000083",
+        "tx_id": "tx_new_19",
+        "video_id": "town04_opt_junction_0053/episode_000083/tx_new_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000066",
+        "tx_id": "tx_00",
+        "video_id": "town04_opt_junction_0053/episode_000066/tx_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000019",
+        "tx_id": "tx_00",
+        "video_id": "town04_opt_junction_0053/episode_000019/tx_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000048",
+        "tx_id": "tx_new_01",
+        "video_id": "town04_opt_junction_0053/episode_000048/tx_new_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000002",
+        "tx_id": "tx_new_38",
+        "video_id": "town04_opt_junction_0053/episode_000002/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000036",
+        "tx_id": "tx_37",
+        "video_id": "town04_opt_junction_0053/episode_000036/tx_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000034",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000034/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000000",
+        "tx_id": "tx_21",
+        "video_id": "town04_opt_junction_0053/episode_000000/tx_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000019",
+        "tx_id": "tx_37",
+        "video_id": "town04_opt_junction_0053/episode_000019/tx_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000130",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000130/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000035",
+        "tx_id": "tx_34",
+        "video_id": "town04_opt_junction_0053/episode_000035/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000138",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000138/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000107",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000107/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000124",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000124/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000040",
+        "tx_id": "tx_15",
+        "video_id": "town04_opt_junction_0053/episode_000040/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000062",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000062/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000001",
+        "tx_id": "tx_new_11",
+        "video_id": "town04_opt_junction_0053/episode_000001/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000013",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000013/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000138",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000138/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000006",
+        "tx_id": "tx_09",
+        "video_id": "town04_opt_junction_0053/episode_000006/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000020",
+        "tx_id": "tx_31",
+        "video_id": "town04_opt_junction_0053/episode_000020/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000143",
+        "tx_id": "tx_14",
+        "video_id": "town04_opt_junction_0053/episode_000143/tx_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000060",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000060/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000097",
+        "tx_id": "tx_new_38",
+        "video_id": "town04_opt_junction_0053/episode_000097/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000051",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000051/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000089",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000089/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000034",
+        "tx_id": "tx_18",
+        "video_id": "town04_opt_junction_0053/episode_000034/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000015",
+        "tx_id": "tx_03",
+        "video_id": "town04_opt_junction_0053/episode_000015/tx_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000086",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000086/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000108",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000108/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000070",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000070/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000043",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000043/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000080",
+        "tx_id": "tx_23",
+        "video_id": "town04_opt_junction_0053/episode_000080/tx_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000032",
+        "tx_id": "tx_23",
+        "video_id": "town04_opt_junction_0053/episode_000032/tx_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000022",
+        "tx_id": "tx_28",
+        "video_id": "town04_opt_junction_0053/episode_000022/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000007",
+        "tx_id": "tx_03",
+        "video_id": "town04_opt_junction_0053/episode_000007/tx_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000116",
+        "tx_id": "tx_24",
+        "video_id": "town04_opt_junction_0053/episode_000116/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000036",
+        "tx_id": "tx_04",
+        "video_id": "town04_opt_junction_0053/episode_000036/tx_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000044",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000044/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000127",
+        "tx_id": "tx_15",
+        "video_id": "town04_opt_junction_0053/episode_000127/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000046",
+        "tx_id": "tx_08",
+        "video_id": "town04_opt_junction_0053/episode_000046/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000039",
+        "tx_id": "tx_09",
+        "video_id": "town04_opt_junction_0053/episode_000039/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000029",
+        "tx_id": "tx_04",
+        "video_id": "town04_opt_junction_0053/episode_000029/tx_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000127",
+        "tx_id": "tx_03",
+        "video_id": "town04_opt_junction_0053/episode_000127/tx_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000092",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000092/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000121",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000121/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000080",
+        "tx_id": "tx_26",
+        "video_id": "town04_opt_junction_0053/episode_000080/tx_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000141",
+        "tx_id": "tx_28",
+        "video_id": "town04_opt_junction_0053/episode_000141/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000046",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000046/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000018",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000018/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000072",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000072/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000107",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000107/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000127",
+        "tx_id": "tx_28",
+        "video_id": "town04_opt_junction_0053/episode_000127/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000005",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000005/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000135",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000135/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000131",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000131/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000065",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000065/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000111",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000111/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_37",
+        "video_id": "town04_opt_junction_0053/episode_000050/tx_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000067",
+        "tx_id": "tx_new_20",
+        "video_id": "town04_opt_junction_0053/episode_000067/tx_new_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000036",
+        "tx_id": "tx_31",
+        "video_id": "town04_opt_junction_0053/episode_000036/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000145",
+        "tx_id": "tx_10",
+        "video_id": "town04_opt_junction_0053/episode_000145/tx_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000069",
+        "tx_id": "tx_28",
+        "video_id": "town04_opt_junction_0053/episode_000069/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000138",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000138/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000042",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000042/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000129",
+        "tx_id": "tx_26",
+        "video_id": "town04_opt_junction_0053/episode_000129/tx_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000088",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000088/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000073",
+        "tx_id": "tx_new_20",
+        "video_id": "town04_opt_junction_0053/episode_000073/tx_new_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000084",
+        "tx_id": "tx_22",
+        "video_id": "town04_opt_junction_0053/episode_000084/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000006",
+        "tx_id": "tx_07",
+        "video_id": "town04_opt_junction_0053/episode_000006/tx_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000056",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000056/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000109",
+        "tx_id": "tx_07",
+        "video_id": "town04_opt_junction_0053/episode_000109/tx_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000113",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000113/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000005",
+        "tx_id": "tx_31",
+        "video_id": "town04_opt_junction_0053/episode_000005/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000043",
+        "tx_id": "tx_30",
+        "video_id": "town04_opt_junction_0053/episode_000043/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000111",
+        "tx_id": "tx_08",
+        "video_id": "town04_opt_junction_0053/episode_000111/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000026",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000026/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000000",
+        "tx_id": "tx_new_20",
+        "video_id": "town04_opt_junction_0053/episode_000000/tx_new_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000116",
+        "tx_id": "tx_new_19",
+        "video_id": "town04_opt_junction_0053/episode_000116/tx_new_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000000",
+        "tx_id": "tx_10",
+        "video_id": "town04_opt_junction_0053/episode_000000/tx_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000137",
+        "tx_id": "tx_new_01",
+        "video_id": "town04_opt_junction_0053/episode_000137/tx_new_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000087",
+        "tx_id": "tx_03",
+        "video_id": "town04_opt_junction_0053/episode_000087/tx_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000064",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000064/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000121",
+        "tx_id": "tx_new_20",
+        "video_id": "town04_opt_junction_0053/episode_000121/tx_new_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000085",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000085/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000045",
+        "tx_id": "tx_09",
+        "video_id": "town04_opt_junction_0053/episode_000045/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000024",
+        "tx_id": "tx_26",
+        "video_id": "town04_opt_junction_0053/episode_000024/tx_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000119",
+        "tx_id": "tx_13",
+        "video_id": "town04_opt_junction_0053/episode_000119/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000086",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000086/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000036",
+        "tx_id": "tx_new_32",
+        "video_id": "town04_opt_junction_0053/episode_000036/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000058",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000058/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000028",
+        "tx_id": "tx_07",
+        "video_id": "town04_opt_junction_0053/episode_000028/tx_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000123",
+        "tx_id": "tx_37",
+        "video_id": "town04_opt_junction_0053/episode_000123/tx_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000017",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000017/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000011",
+        "tx_id": "tx_07",
+        "video_id": "town04_opt_junction_0053/episode_000011/tx_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000145",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000145/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000128",
+        "tx_id": "tx_23",
+        "video_id": "town04_opt_junction_0053/episode_000128/tx_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000076",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000076/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000002",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000002/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000140",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000140/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000067",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000067/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000131",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000131/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000096",
+        "tx_id": "tx_23",
+        "video_id": "town04_opt_junction_0053/episode_000096/tx_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000089",
+        "tx_id": "tx_new_20",
+        "video_id": "town04_opt_junction_0053/episode_000089/tx_new_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000118",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000118/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000132",
+        "tx_id": "tx_07",
+        "video_id": "town04_opt_junction_0053/episode_000132/tx_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000109",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000109/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000040",
+        "tx_id": "tx_00",
+        "video_id": "town04_opt_junction_0053/episode_000040/tx_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000017",
+        "tx_id": "tx_new_11",
+        "video_id": "town04_opt_junction_0053/episode_000017/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000101",
+        "tx_id": "tx_34",
+        "video_id": "town04_opt_junction_0053/episode_000101/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000094",
+        "tx_id": "tx_30",
+        "video_id": "town04_opt_junction_0053/episode_000094/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000107",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000107/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000004",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000004/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000091",
+        "tx_id": "tx_37",
+        "video_id": "town04_opt_junction_0053/episode_000091/tx_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000092",
+        "tx_id": "tx_new_01",
+        "video_id": "town04_opt_junction_0053/episode_000092/tx_new_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000114",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000114/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000082",
+        "tx_id": "tx_new_11",
+        "video_id": "town04_opt_junction_0053/episode_000082/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000061",
+        "tx_id": "tx_34",
+        "video_id": "town04_opt_junction_0053/episode_000061/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000040",
+        "tx_id": "tx_18",
+        "video_id": "town04_opt_junction_0053/episode_000040/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000134",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000134/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000041",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000041/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000051",
+        "tx_id": "tx_new_38",
+        "video_id": "town04_opt_junction_0053/episode_000051/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000050/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000056",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000056/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000002",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000002/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000024",
+        "tx_id": "tx_new_11",
+        "video_id": "town04_opt_junction_0053/episode_000024/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000147",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000147/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000039",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000039/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000064",
+        "tx_id": "tx_24",
+        "video_id": "town04_opt_junction_0053/episode_000064/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000038",
+        "tx_id": "tx_new_01",
+        "video_id": "town04_opt_junction_0053/episode_000038/tx_new_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000134",
+        "tx_id": "tx_34",
+        "video_id": "town04_opt_junction_0053/episode_000134/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000135",
+        "tx_id": "tx_04",
+        "video_id": "town04_opt_junction_0053/episode_000135/tx_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000110",
+        "tx_id": "tx_15",
+        "video_id": "town04_opt_junction_0053/episode_000110/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000016",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000016/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000069",
+        "tx_id": "tx_new_19",
+        "video_id": "town04_opt_junction_0053/episode_000069/tx_new_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000077",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000077/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000010",
+        "tx_id": "tx_new_20",
+        "video_id": "town04_opt_junction_0053/episode_000010/tx_new_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000068",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000068/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000141",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000141/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000023",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000023/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000126",
+        "tx_id": "tx_08",
+        "video_id": "town04_opt_junction_0053/episode_000126/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000063",
+        "tx_id": "tx_04",
+        "video_id": "town04_opt_junction_0053/episode_000063/tx_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000083",
+        "tx_id": "tx_00",
+        "video_id": "town04_opt_junction_0053/episode_000083/tx_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000139",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000139/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000062",
+        "tx_id": "tx_31",
+        "video_id": "town04_opt_junction_0053/episode_000062/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000047",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000047/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000079",
+        "tx_id": "tx_13",
+        "video_id": "town04_opt_junction_0053/episode_000079/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000134",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000134/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000116",
+        "tx_id": "tx_22",
+        "video_id": "town04_opt_junction_0053/episode_000116/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000064",
+        "tx_id": "tx_23",
+        "video_id": "town04_opt_junction_0053/episode_000064/tx_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000040",
+        "tx_id": "tx_26",
+        "video_id": "town04_opt_junction_0053/episode_000040/tx_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000012",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000012/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000133",
+        "tx_id": "tx_15",
+        "video_id": "town04_opt_junction_0053/episode_000133/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000057",
+        "tx_id": "tx_new_01",
+        "video_id": "town04_opt_junction_0053/episode_000057/tx_new_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000050/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000003",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000003/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000124",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000124/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000059",
+        "tx_id": "tx_22",
+        "video_id": "town04_opt_junction_0053/episode_000059/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000085",
+        "tx_id": "tx_15",
+        "video_id": "town04_opt_junction_0053/episode_000085/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000057",
+        "tx_id": "tx_10",
+        "video_id": "town04_opt_junction_0053/episode_000057/tx_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000114",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000114/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000142",
+        "tx_id": "tx_03",
+        "video_id": "town04_opt_junction_0053/episode_000142/tx_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000101",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000101/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000124",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000124/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000063",
+        "tx_id": "tx_09",
+        "video_id": "town04_opt_junction_0053/episode_000063/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000117",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000117/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000017",
+        "tx_id": "tx_18",
+        "video_id": "town04_opt_junction_0053/episode_000017/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000021",
+        "tx_id": "tx_15",
+        "video_id": "town04_opt_junction_0053/episode_000021/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000023",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000023/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000057",
+        "tx_id": "tx_26",
+        "video_id": "town04_opt_junction_0053/episode_000057/tx_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000032",
+        "tx_id": "tx_21",
+        "video_id": "town04_opt_junction_0053/episode_000032/tx_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000069",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000069/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000068",
+        "tx_id": "tx_13",
+        "video_id": "town04_opt_junction_0053/episode_000068/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000015",
+        "tx_id": "tx_09",
+        "video_id": "town04_opt_junction_0053/episode_000015/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000096",
+        "tx_id": "tx_18",
+        "video_id": "town04_opt_junction_0053/episode_000096/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000090",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000090/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000071",
+        "tx_id": "tx_04",
+        "video_id": "town04_opt_junction_0053/episode_000071/tx_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000022",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000022/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000022",
+        "tx_id": "tx_new_19",
+        "video_id": "town04_opt_junction_0053/episode_000022/tx_new_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000052",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000052/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000110",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000110/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000011",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000011/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000034",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000034/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000124",
+        "tx_id": "tx_13",
+        "video_id": "town04_opt_junction_0053/episode_000124/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000110",
+        "tx_id": "tx_28",
+        "video_id": "town04_opt_junction_0053/episode_000110/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000092",
+        "tx_id": "tx_new_29",
+        "video_id": "town04_opt_junction_0053/episode_000092/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000028",
+        "tx_id": "tx_37",
+        "video_id": "town04_opt_junction_0053/episode_000028/tx_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000062",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000062/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000090",
+        "tx_id": "tx_04",
+        "video_id": "town04_opt_junction_0053/episode_000090/tx_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000125",
+        "tx_id": "tx_22",
+        "video_id": "town04_opt_junction_0053/episode_000125/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000004",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000004/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000100",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000100/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000054",
+        "tx_id": "tx_30",
+        "video_id": "town04_opt_junction_0053/episode_000054/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000117",
+        "tx_id": "tx_14",
+        "video_id": "town04_opt_junction_0053/episode_000117/tx_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000058",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000058/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000071",
+        "tx_id": "tx_09",
+        "video_id": "town04_opt_junction_0053/episode_000071/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000075",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000075/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000137",
+        "tx_id": "tx_21",
+        "video_id": "town04_opt_junction_0053/episode_000137/tx_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000044",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000044/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000122",
+        "tx_id": "tx_new_38",
+        "video_id": "town04_opt_junction_0053/episode_000122/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000033",
+        "tx_id": "tx_24",
+        "video_id": "town04_opt_junction_0053/episode_000033/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000038",
+        "tx_id": "tx_28",
+        "video_id": "town04_opt_junction_0053/episode_000038/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000128",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000128/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000090",
+        "tx_id": "tx_21",
+        "video_id": "town04_opt_junction_0053/episode_000090/tx_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000056",
+        "tx_id": "tx_21",
+        "video_id": "town04_opt_junction_0053/episode_000056/tx_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000040",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000040/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000068",
+        "tx_id": "tx_08",
+        "video_id": "town04_opt_junction_0053/episode_000068/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000027",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000027/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000003",
+        "tx_id": "tx_new_32",
+        "video_id": "town04_opt_junction_0053/episode_000003/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000016",
+        "tx_id": "tx_new_01",
+        "video_id": "town04_opt_junction_0053/episode_000016/tx_new_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000084",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000084/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000023",
+        "tx_id": "tx_04",
+        "video_id": "town04_opt_junction_0053/episode_000023/tx_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000075",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000075/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000055",
+        "tx_id": "tx_00",
+        "video_id": "town04_opt_junction_0053/episode_000055/tx_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000001",
+        "tx_id": "tx_18",
+        "video_id": "town04_opt_junction_0053/episode_000001/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000140",
+        "tx_id": "tx_37",
+        "video_id": "town04_opt_junction_0053/episode_000140/tx_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000108",
+        "tx_id": "tx_24",
+        "video_id": "town04_opt_junction_0053/episode_000108/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000141",
+        "tx_id": "tx_22",
+        "video_id": "town04_opt_junction_0053/episode_000141/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000142",
+        "tx_id": "tx_new_19",
+        "video_id": "town04_opt_junction_0053/episode_000142/tx_new_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000077",
+        "tx_id": "tx_03",
+        "video_id": "town04_opt_junction_0053/episode_000077/tx_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000067",
+        "tx_id": "tx_new_38",
+        "video_id": "town04_opt_junction_0053/episode_000067/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000133",
+        "tx_id": "tx_24",
+        "video_id": "town04_opt_junction_0053/episode_000133/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000095",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000095/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000025",
+        "tx_id": "tx_10",
+        "video_id": "town04_opt_junction_0053/episode_000025/tx_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000086",
+        "tx_id": "tx_08",
+        "video_id": "town04_opt_junction_0053/episode_000086/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000012",
+        "tx_id": "tx_22",
+        "video_id": "town04_opt_junction_0053/episode_000012/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000109",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000109/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000046",
+        "tx_id": "tx_34",
+        "video_id": "town04_opt_junction_0053/episode_000046/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000069",
+        "tx_id": "tx_22",
+        "video_id": "town04_opt_junction_0053/episode_000069/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000007",
+        "tx_id": "tx_30",
+        "video_id": "town04_opt_junction_0053/episode_000007/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000030",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000030/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000101",
+        "tx_id": "tx_31",
+        "video_id": "town04_opt_junction_0053/episode_000101/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000093",
+        "tx_id": "tx_07",
+        "video_id": "town04_opt_junction_0053/episode_000093/tx_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000021",
+        "tx_id": "tx_30",
+        "video_id": "town04_opt_junction_0053/episode_000021/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000043",
+        "tx_id": "tx_new_12",
+        "video_id": "town04_opt_junction_0053/episode_000043/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000033",
+        "tx_id": "tx_10",
+        "video_id": "town04_opt_junction_0053/episode_000033/tx_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000100",
+        "tx_id": "tx_new_27",
+        "video_id": "town04_opt_junction_0053/episode_000100/tx_new_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000112",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000112/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000013",
+        "tx_id": "tx_new_06",
+        "video_id": "town04_opt_junction_0053/episode_000013/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000012",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000012/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000142",
+        "tx_id": "tx_30",
+        "video_id": "town04_opt_junction_0053/episode_000142/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000086",
+        "tx_id": "tx_16",
+        "video_id": "town04_opt_junction_0053/episode_000086/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000056",
+        "tx_id": "tx_00",
+        "video_id": "town04_opt_junction_0053/episode_000056/tx_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000105",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000105/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000047",
+        "tx_id": "tx_new_05",
+        "video_id": "town04_opt_junction_0053/episode_000047/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000027",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000027/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000104",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000104/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000099",
+        "tx_id": "tx_33",
+        "video_id": "town04_opt_junction_0053/episode_000099/tx_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000017",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000017/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000092",
+        "tx_id": "tx_34",
+        "video_id": "town04_opt_junction_0053/episode_000092/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000052",
+        "tx_id": "tx_09",
+        "video_id": "town04_opt_junction_0053/episode_000052/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000075",
+        "tx_id": "tx_new_38",
+        "video_id": "town04_opt_junction_0053/episode_000075/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000030",
+        "tx_id": "tx_34",
+        "video_id": "town04_opt_junction_0053/episode_000030/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000032",
+        "tx_id": "tx_new_11",
+        "video_id": "town04_opt_junction_0053/episode_000032/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000066",
+        "tx_id": "tx_39",
+        "video_id": "town04_opt_junction_0053/episode_000066/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000078",
+        "tx_id": "tx_new_02",
+        "video_id": "town04_opt_junction_0053/episode_000078/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000059",
+        "tx_id": "tx_36",
+        "video_id": "town04_opt_junction_0053/episode_000059/tx_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000000",
+        "tx_id": "tx_new_25",
+        "video_id": "town04_opt_junction_0053/episode_000000/tx_new_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000091",
+        "tx_id": "tx_35",
+        "video_id": "town04_opt_junction_0053/episode_000091/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000103",
+        "tx_id": "tx_24",
+        "video_id": "town04_opt_junction_0053/episode_000103/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000014",
+        "tx_id": "tx_08",
+        "video_id": "town04_opt_junction_0053/episode_000014/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000055",
+        "tx_id": "tx_08",
+        "video_id": "town04_opt_junction_0053/episode_000055/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town04_opt_junction_0053",
+        "episode_id": "episode_000026",
+        "tx_id": "tx_17",
+        "video_id": "town04_opt_junction_0053/episode_000026/tx_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000098",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000098/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000105",
+        "tx_id": "tx_new_11",
+        "video_id": "town05_opt_junction_0396/episode_000105/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000017",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000017/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000065",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000065/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000055",
+        "tx_id": "tx_new_07",
+        "video_id": "town05_opt_junction_0396/episode_000055/tx_new_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000131",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000131/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000075",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000075/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000042",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000042/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000141",
+        "tx_id": "tx_28",
+        "video_id": "town05_opt_junction_0396/episode_000141/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000067",
+        "tx_id": "tx_34",
+        "video_id": "town05_opt_junction_0396/episode_000067/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000044",
+        "tx_id": "tx_13",
+        "video_id": "town05_opt_junction_0396/episode_000044/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000034",
+        "tx_id": "tx_31",
+        "video_id": "town05_opt_junction_0396/episode_000034/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000134",
+        "tx_id": "tx_new_07",
+        "video_id": "town05_opt_junction_0396/episode_000134/tx_new_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000142",
+        "tx_id": "tx_new_00",
+        "video_id": "town05_opt_junction_0396/episode_000142/tx_new_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000015",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000015/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000026",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000026/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000103",
+        "tx_id": "tx_new_36",
+        "video_id": "town05_opt_junction_0396/episode_000103/tx_new_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000123",
+        "tx_id": "tx_new_05",
+        "video_id": "town05_opt_junction_0396/episode_000123/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000018",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000018/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000014",
+        "tx_id": "tx_13",
+        "video_id": "town05_opt_junction_0396/episode_000014/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000028",
+        "tx_id": "tx_16",
+        "video_id": "town05_opt_junction_0396/episode_000028/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000129",
+        "tx_id": "tx_27",
+        "video_id": "town05_opt_junction_0396/episode_000129/tx_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000012",
+        "tx_id": "tx_new_12",
+        "video_id": "town05_opt_junction_0396/episode_000012/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000009",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000009/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000018",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000018/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000118",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000118/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000050/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000070",
+        "tx_id": "tx_new_26",
+        "video_id": "town05_opt_junction_0396/episode_000070/tx_new_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000061",
+        "tx_id": "tx_30",
+        "video_id": "town05_opt_junction_0396/episode_000061/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000143",
+        "tx_id": "tx_new_14",
+        "video_id": "town05_opt_junction_0396/episode_000143/tx_new_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000091",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000091/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000102",
+        "tx_id": "tx_24",
+        "video_id": "town05_opt_junction_0396/episode_000102/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000046",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000046/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000018",
+        "tx_id": "tx_31",
+        "video_id": "town05_opt_junction_0396/episode_000018/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000059",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000059/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000143",
+        "tx_id": "tx_new_06",
+        "video_id": "town05_opt_junction_0396/episode_000143/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000048",
+        "tx_id": "tx_27",
+        "video_id": "town05_opt_junction_0396/episode_000048/tx_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000081",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000081/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000077",
+        "tx_id": "tx_13",
+        "video_id": "town05_opt_junction_0396/episode_000077/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000008",
+        "tx_id": "tx_new_17",
+        "video_id": "town05_opt_junction_0396/episode_000008/tx_new_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000089",
+        "tx_id": "tx_16",
+        "video_id": "town05_opt_junction_0396/episode_000089/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000112",
+        "tx_id": "tx_31",
+        "video_id": "town05_opt_junction_0396/episode_000112/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000063",
+        "tx_id": "tx_new_06",
+        "video_id": "town05_opt_junction_0396/episode_000063/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000141",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000141/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000009",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000009/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000108",
+        "tx_id": "tx_new_21",
+        "video_id": "town05_opt_junction_0396/episode_000108/tx_new_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000059",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000059/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000059",
+        "tx_id": "tx_new_37",
+        "video_id": "town05_opt_junction_0396/episode_000059/tx_new_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000107",
+        "tx_id": "tx_new_33",
+        "video_id": "town05_opt_junction_0396/episode_000107/tx_new_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000057",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000057/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000038",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000038/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000144",
+        "tx_id": "tx_new_23",
+        "video_id": "town05_opt_junction_0396/episode_000144/tx_new_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000111",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000111/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000013",
+        "tx_id": "tx_new_00",
+        "video_id": "town05_opt_junction_0396/episode_000013/tx_new_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000101",
+        "tx_id": "tx_new_11",
+        "video_id": "town05_opt_junction_0396/episode_000101/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000075",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000075/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000067",
+        "tx_id": "tx_new_11",
+        "video_id": "town05_opt_junction_0396/episode_000067/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000047",
+        "tx_id": "tx_new_02",
+        "video_id": "town05_opt_junction_0396/episode_000047/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000111",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000111/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000017",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000017/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000126",
+        "tx_id": "tx_new_00",
+        "video_id": "town05_opt_junction_0396/episode_000126/tx_new_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000003",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000003/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000030",
+        "tx_id": "tx_new_02",
+        "video_id": "town05_opt_junction_0396/episode_000030/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000077",
+        "tx_id": "tx_new_36",
+        "video_id": "town05_opt_junction_0396/episode_000077/tx_new_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000047",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000047/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000048",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000048/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000099",
+        "tx_id": "tx_34",
+        "video_id": "town05_opt_junction_0396/episode_000099/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000112",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000112/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000107",
+        "tx_id": "tx_35",
+        "video_id": "town05_opt_junction_0396/episode_000107/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000087",
+        "tx_id": "tx_new_06",
+        "video_id": "town05_opt_junction_0396/episode_000087/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000042",
+        "tx_id": "tx_new_04",
+        "video_id": "town05_opt_junction_0396/episode_000042/tx_new_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000058",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000058/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000141",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000141/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000118",
+        "tx_id": "tx_new_02",
+        "video_id": "town05_opt_junction_0396/episode_000118/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000083",
+        "tx_id": "tx_new_37",
+        "video_id": "town05_opt_junction_0396/episode_000083/tx_new_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000061",
+        "tx_id": "tx_new_14",
+        "video_id": "town05_opt_junction_0396/episode_000061/tx_new_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000038",
+        "tx_id": "tx_24",
+        "video_id": "town05_opt_junction_0396/episode_000038/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000045",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000045/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000056",
+        "tx_id": "tx_new_03",
+        "video_id": "town05_opt_junction_0396/episode_000056/tx_new_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000007",
+        "tx_id": "tx_16",
+        "video_id": "town05_opt_junction_0396/episode_000007/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000097",
+        "tx_id": "tx_27",
+        "video_id": "town05_opt_junction_0396/episode_000097/tx_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000116",
+        "tx_id": "tx_13",
+        "video_id": "town05_opt_junction_0396/episode_000116/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000128",
+        "tx_id": "tx_new_00",
+        "video_id": "town05_opt_junction_0396/episode_000128/tx_new_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000085",
+        "tx_id": "tx_new_04",
+        "video_id": "town05_opt_junction_0396/episode_000085/tx_new_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000030",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000030/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_new_29",
+        "video_id": "town05_opt_junction_0396/episode_000050/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000118",
+        "tx_id": "tx_new_12",
+        "video_id": "town05_opt_junction_0396/episode_000118/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000111",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000111/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000116",
+        "tx_id": "tx_new_33",
+        "video_id": "town05_opt_junction_0396/episode_000116/tx_new_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000051",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000051/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000076",
+        "tx_id": "tx_new_10",
+        "video_id": "town05_opt_junction_0396/episode_000076/tx_new_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000026",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000026/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000071",
+        "tx_id": "tx_16",
+        "video_id": "town05_opt_junction_0396/episode_000071/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000119",
+        "tx_id": "tx_28",
+        "video_id": "town05_opt_junction_0396/episode_000119/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000120",
+        "tx_id": "tx_new_11",
+        "video_id": "town05_opt_junction_0396/episode_000120/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000008",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000008/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000036",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000036/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000121",
+        "tx_id": "tx_35",
+        "video_id": "town05_opt_junction_0396/episode_000121/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000044",
+        "tx_id": "tx_24",
+        "video_id": "town05_opt_junction_0396/episode_000044/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000037",
+        "tx_id": "tx_new_14",
+        "video_id": "town05_opt_junction_0396/episode_000037/tx_new_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000102",
+        "tx_id": "tx_new_05",
+        "video_id": "town05_opt_junction_0396/episode_000102/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000128",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000128/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000069",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000069/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000124",
+        "tx_id": "tx_new_37",
+        "video_id": "town05_opt_junction_0396/episode_000124/tx_new_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000097",
+        "tx_id": "tx_31",
+        "video_id": "town05_opt_junction_0396/episode_000097/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000092",
+        "tx_id": "tx_new_04",
+        "video_id": "town05_opt_junction_0396/episode_000092/tx_new_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000048",
+        "tx_id": "tx_new_03",
+        "video_id": "town05_opt_junction_0396/episode_000048/tx_new_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000078",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000078/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000076",
+        "tx_id": "tx_new_12",
+        "video_id": "town05_opt_junction_0396/episode_000076/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000001",
+        "tx_id": "tx_new_00",
+        "video_id": "town05_opt_junction_0396/episode_000001/tx_new_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000111",
+        "tx_id": "tx_new_06",
+        "video_id": "town05_opt_junction_0396/episode_000111/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000100",
+        "tx_id": "tx_new_23",
+        "video_id": "town05_opt_junction_0396/episode_000100/tx_new_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000088",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000088/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000012",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000012/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000029",
+        "tx_id": "tx_13",
+        "video_id": "town05_opt_junction_0396/episode_000029/tx_13",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000121",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000121/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000122",
+        "tx_id": "tx_27",
+        "video_id": "town05_opt_junction_0396/episode_000122/tx_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000090",
+        "tx_id": "tx_new_33",
+        "video_id": "town05_opt_junction_0396/episode_000090/tx_new_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000126",
+        "tx_id": "tx_new_02",
+        "video_id": "town05_opt_junction_0396/episode_000126/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000017",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000017/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000033",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000033/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000058",
+        "tx_id": "tx_28",
+        "video_id": "town05_opt_junction_0396/episode_000058/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000088",
+        "tx_id": "tx_31",
+        "video_id": "town05_opt_junction_0396/episode_000088/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000146",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000146/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_new_33",
+        "video_id": "town05_opt_junction_0396/episode_000050/tx_new_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000054",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000054/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000068",
+        "tx_id": "tx_new_12",
+        "video_id": "town05_opt_junction_0396/episode_000068/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000097",
+        "tx_id": "tx_new_12",
+        "video_id": "town05_opt_junction_0396/episode_000097/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000094",
+        "tx_id": "tx_24",
+        "video_id": "town05_opt_junction_0396/episode_000094/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000053",
+        "tx_id": "tx_35",
+        "video_id": "town05_opt_junction_0396/episode_000053/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000124",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000124/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000113",
+        "tx_id": "tx_new_23",
+        "video_id": "town05_opt_junction_0396/episode_000113/tx_new_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000054",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000054/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000066",
+        "tx_id": "tx_new_03",
+        "video_id": "town05_opt_junction_0396/episode_000066/tx_new_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000007",
+        "tx_id": "tx_new_14",
+        "video_id": "town05_opt_junction_0396/episode_000007/tx_new_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000016",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000016/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000083",
+        "tx_id": "tx_35",
+        "video_id": "town05_opt_junction_0396/episode_000083/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000093",
+        "tx_id": "tx_new_37",
+        "video_id": "town05_opt_junction_0396/episode_000093/tx_new_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000080",
+        "tx_id": "tx_18",
+        "video_id": "town05_opt_junction_0396/episode_000080/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000013",
+        "tx_id": "tx_new_21",
+        "video_id": "town05_opt_junction_0396/episode_000013/tx_new_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000124",
+        "tx_id": "tx_new_23",
+        "video_id": "town05_opt_junction_0396/episode_000124/tx_new_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000047",
+        "tx_id": "tx_28",
+        "video_id": "town05_opt_junction_0396/episode_000047/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000109",
+        "tx_id": "tx_new_05",
+        "video_id": "town05_opt_junction_0396/episode_000109/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000070",
+        "tx_id": "tx_28",
+        "video_id": "town05_opt_junction_0396/episode_000070/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000096",
+        "tx_id": "tx_25",
+        "video_id": "town05_opt_junction_0396/episode_000096/tx_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000052",
+        "tx_id": "tx_20",
+        "video_id": "town05_opt_junction_0396/episode_000052/tx_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000116",
+        "tx_id": "tx_24",
+        "video_id": "town05_opt_junction_0396/episode_000116/tx_24",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000045",
+        "tx_id": "tx_new_26",
+        "video_id": "town05_opt_junction_0396/episode_000045/tx_new_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000104",
+        "tx_id": "tx_new_03",
+        "video_id": "town05_opt_junction_0396/episode_000104/tx_new_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000072",
+        "tx_id": "tx_27",
+        "video_id": "town05_opt_junction_0396/episode_000072/tx_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000027",
+        "tx_id": "tx_35",
+        "video_id": "town05_opt_junction_0396/episode_000027/tx_35",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000048",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000048/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000051",
+        "tx_id": "tx_new_23",
+        "video_id": "town05_opt_junction_0396/episode_000051/tx_new_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000135",
+        "tx_id": "tx_new_02",
+        "video_id": "town05_opt_junction_0396/episode_000135/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000019",
+        "tx_id": "tx_new_12",
+        "video_id": "town05_opt_junction_0396/episode_000019/tx_new_12",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000007",
+        "tx_id": "tx_new_06",
+        "video_id": "town05_opt_junction_0396/episode_000007/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000010",
+        "tx_id": "tx_28",
+        "video_id": "town05_opt_junction_0396/episode_000010/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000131",
+        "tx_id": "tx_new_26",
+        "video_id": "town05_opt_junction_0396/episode_000131/tx_new_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000060",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000060/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000073",
+        "tx_id": "tx_18",
+        "video_id": "town05_opt_junction_0396/episode_000073/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000011",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000011/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000040",
+        "tx_id": "tx_new_03",
+        "video_id": "town05_opt_junction_0396/episode_000040/tx_new_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000062",
+        "tx_id": "tx_new_21",
+        "video_id": "town05_opt_junction_0396/episode_000062/tx_new_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000049",
+        "tx_id": "tx_new_11",
+        "video_id": "town05_opt_junction_0396/episode_000049/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000026",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000026/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000041",
+        "tx_id": "tx_25",
+        "video_id": "town05_opt_junction_0396/episode_000041/tx_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000076",
+        "tx_id": "tx_30",
+        "video_id": "town05_opt_junction_0396/episode_000076/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000073",
+        "tx_id": "tx_new_17",
+        "video_id": "town05_opt_junction_0396/episode_000073/tx_new_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000009",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000009/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000002",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000002/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000143",
+        "tx_id": "tx_new_26",
+        "video_id": "town05_opt_junction_0396/episode_000143/tx_new_26",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000126",
+        "tx_id": "tx_20",
+        "video_id": "town05_opt_junction_0396/episode_000126/tx_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000012",
+        "tx_id": "tx_new_02",
+        "video_id": "town05_opt_junction_0396/episode_000012/tx_new_02",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000068",
+        "tx_id": "tx_new_29",
+        "video_id": "town05_opt_junction_0396/episode_000068/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000128",
+        "tx_id": "tx_new_03",
+        "video_id": "town05_opt_junction_0396/episode_000128/tx_new_03",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000063",
+        "tx_id": "tx_new_11",
+        "video_id": "town05_opt_junction_0396/episode_000063/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000020",
+        "tx_id": "tx_new_37",
+        "video_id": "town05_opt_junction_0396/episode_000020/tx_new_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000073",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000073/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000006",
+        "tx_id": "tx_new_33",
+        "video_id": "town05_opt_junction_0396/episode_000006/tx_new_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000019",
+        "tx_id": "tx_new_10",
+        "video_id": "town05_opt_junction_0396/episode_000019/tx_new_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000050/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000071",
+        "tx_id": "tx_new_21",
+        "video_id": "town05_opt_junction_0396/episode_000071/tx_new_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000006",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000006/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000146",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000146/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000050",
+        "tx_id": "tx_new_14",
+        "video_id": "town05_opt_junction_0396/episode_000050/tx_new_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000088",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000088/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000064",
+        "tx_id": "tx_31",
+        "video_id": "town05_opt_junction_0396/episode_000064/tx_31",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000110",
+        "tx_id": "tx_new_14",
+        "video_id": "town05_opt_junction_0396/episode_000110/tx_new_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000086",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000086/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000089",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000089/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000081",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000081/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000148",
+        "tx_id": "tx_new_21",
+        "video_id": "town05_opt_junction_0396/episode_000148/tx_new_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000085",
+        "tx_id": "tx_20",
+        "video_id": "town05_opt_junction_0396/episode_000085/tx_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000085",
+        "tx_id": "tx_new_33",
+        "video_id": "town05_opt_junction_0396/episode_000085/tx_new_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000008",
+        "tx_id": "tx_new_11",
+        "video_id": "town05_opt_junction_0396/episode_000008/tx_new_11",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000113",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000113/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000055",
+        "tx_id": "tx_new_00",
+        "video_id": "town05_opt_junction_0396/episode_000055/tx_new_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000080",
+        "tx_id": "tx_25",
+        "video_id": "town05_opt_junction_0396/episode_000080/tx_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000037",
+        "tx_id": "tx_new_04",
+        "video_id": "town05_opt_junction_0396/episode_000037/tx_new_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000088",
+        "tx_id": "tx_27",
+        "video_id": "town05_opt_junction_0396/episode_000088/tx_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000131",
+        "tx_id": "tx_new_29",
+        "video_id": "town05_opt_junction_0396/episode_000131/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000143",
+        "tx_id": "tx_20",
+        "video_id": "town05_opt_junction_0396/episode_000143/tx_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000024",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000024/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000134",
+        "tx_id": "tx_new_33",
+        "video_id": "town05_opt_junction_0396/episode_000134/tx_new_33",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000036",
+        "tx_id": "tx_new_23",
+        "video_id": "town05_opt_junction_0396/episode_000036/tx_new_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000117",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000117/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000006",
+        "tx_id": "tx_new_36",
+        "video_id": "town05_opt_junction_0396/episode_000006/tx_new_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000038",
+        "tx_id": "tx_new_00",
+        "video_id": "town05_opt_junction_0396/episode_000038/tx_new_00",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000045",
+        "tx_id": "tx_20",
+        "video_id": "town05_opt_junction_0396/episode_000045/tx_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000079",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000079/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000121",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000121/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000074",
+        "tx_id": "tx_new_05",
+        "video_id": "town05_opt_junction_0396/episode_000074/tx_new_05",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000076",
+        "tx_id": "tx_new_14",
+        "video_id": "town05_opt_junction_0396/episode_000076/tx_new_14",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000069",
+        "tx_id": "tx_new_07",
+        "video_id": "town05_opt_junction_0396/episode_000069/tx_new_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000074",
+        "tx_id": "tx_34",
+        "video_id": "town05_opt_junction_0396/episode_000074/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000006",
+        "tx_id": "tx_new_07",
+        "video_id": "town05_opt_junction_0396/episode_000006/tx_new_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000040",
+        "tx_id": "tx_27",
+        "video_id": "town05_opt_junction_0396/episode_000040/tx_27",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000037",
+        "tx_id": "tx_34",
+        "video_id": "town05_opt_junction_0396/episode_000037/tx_34",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000031",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000031/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000043",
+        "tx_id": "tx_new_21",
+        "video_id": "town05_opt_junction_0396/episode_000043/tx_new_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000142",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000142/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000144",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000144/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000138",
+        "tx_id": "tx_09",
+        "video_id": "town05_opt_junction_0396/episode_000138/tx_09",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000067",
+        "tx_id": "tx_new_32",
+        "video_id": "town05_opt_junction_0396/episode_000067/tx_new_32",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000043",
+        "tx_id": "tx_30",
+        "video_id": "town05_opt_junction_0396/episode_000043/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000091",
+        "tx_id": "tx_18",
+        "video_id": "town05_opt_junction_0396/episode_000091/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000062",
+        "tx_id": "tx_new_36",
+        "video_id": "town05_opt_junction_0396/episode_000062/tx_new_36",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000127",
+        "tx_id": "tx_30",
+        "video_id": "town05_opt_junction_0396/episode_000127/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000060",
+        "tx_id": "tx_new_10",
+        "video_id": "town05_opt_junction_0396/episode_000060/tx_new_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000032",
+        "tx_id": "tx_01",
+        "video_id": "town05_opt_junction_0396/episode_000032/tx_01",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000109",
+        "tx_id": "tx_30",
+        "video_id": "town05_opt_junction_0396/episode_000109/tx_30",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000057",
+        "tx_id": "tx_18",
+        "video_id": "town05_opt_junction_0396/episode_000057/tx_18",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000125",
+        "tx_id": "tx_new_04",
+        "video_id": "town05_opt_junction_0396/episode_000125/tx_new_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000078",
+        "tx_id": "tx_28",
+        "video_id": "town05_opt_junction_0396/episode_000078/tx_28",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000098",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000098/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000116",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000116/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000000",
+        "tx_id": "tx_25",
+        "video_id": "town05_opt_junction_0396/episode_000000/tx_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000144",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000144/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000139",
+        "tx_id": "tx_new_23",
+        "video_id": "town05_opt_junction_0396/episode_000139/tx_new_23",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000041",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000041/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000024",
+        "tx_id": "tx_new_29",
+        "video_id": "town05_opt_junction_0396/episode_000024/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000129",
+        "tx_id": "tx_25",
+        "video_id": "town05_opt_junction_0396/episode_000129/tx_25",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000002",
+        "tx_id": "tx_08",
+        "video_id": "town05_opt_junction_0396/episode_000002/tx_08",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000072",
+        "tx_id": "tx_15",
+        "video_id": "town05_opt_junction_0396/episode_000072/tx_15",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000145",
+        "tx_id": "tx_16",
+        "video_id": "town05_opt_junction_0396/episode_000145/tx_16",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000085",
+        "tx_id": "tx_new_07",
+        "video_id": "town05_opt_junction_0396/episode_000085/tx_new_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000079",
+        "tx_id": "tx_new_06",
+        "video_id": "town05_opt_junction_0396/episode_000079/tx_new_06",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000147",
+        "tx_id": "tx_new_37",
+        "video_id": "town05_opt_junction_0396/episode_000147/tx_new_37",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000030",
+        "tx_id": "tx_new_21",
+        "video_id": "town05_opt_junction_0396/episode_000030/tx_new_21",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000036",
+        "tx_id": "tx_19",
+        "video_id": "town05_opt_junction_0396/episode_000036/tx_19",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000143",
+        "tx_id": "tx_new_04",
+        "video_id": "town05_opt_junction_0396/episode_000143/tx_new_04",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000136",
+        "tx_id": "tx_new_17",
+        "video_id": "town05_opt_junction_0396/episode_000136/tx_new_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000096",
+        "tx_id": "tx_20",
+        "video_id": "town05_opt_junction_0396/episode_000096/tx_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000065",
+        "tx_id": "tx_new_10",
+        "video_id": "town05_opt_junction_0396/episode_000065/tx_new_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000065",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000065/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000084",
+        "tx_id": "tx_new_10",
+        "video_id": "town05_opt_junction_0396/episode_000084/tx_new_10",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000086",
+        "tx_id": "tx_new_38",
+        "video_id": "town05_opt_junction_0396/episode_000086/tx_new_38",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000089",
+        "tx_id": "tx_new_17",
+        "video_id": "town05_opt_junction_0396/episode_000089/tx_new_17",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000061",
+        "tx_id": "tx_20",
+        "video_id": "town05_opt_junction_0396/episode_000061/tx_20",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000111",
+        "tx_id": "tx_new_07",
+        "video_id": "town05_opt_junction_0396/episode_000111/tx_new_07",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000105",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000105/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000024",
+        "tx_id": "tx_39",
+        "video_id": "town05_opt_junction_0396/episode_000024/tx_39",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000003",
+        "tx_id": "tx_22",
+        "video_id": "town05_opt_junction_0396/episode_000003/tx_22",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000010",
+        "tx_id": "tx_new_29",
+        "video_id": "town05_opt_junction_0396/episode_000010/tx_new_29",
+        "frame_count": 100
+      },
+      {
+        "scene_id": "town05_opt_junction_0396",
+        "episode_id": "episode_000049",
+        "tx_id": "tx_13",
+        "video_id": "town05_opt_junction_0396/episode_000049/tx_13",
+        "frame_count": 100
+      }
+    ]
+  }
+}
