@@ -13,7 +13,7 @@ from rmdm.diffusion import DiffusionProcess
 from utils import cal_pinn_without_source
 
 from .config import ExperimentConfig
-from .noise import add_measurement_noise
+from .noise import add_measurement_noise, apply_variance_conditioning
 
 
 @dataclass(frozen=True)
@@ -47,6 +47,9 @@ def training_step(
     epoch: int,
 ) -> TrainingStepResult:
     sparse = add_measurement_noise(sampling_policy(dense_batch), config.measurement_noise, epoch=epoch)
+    sparse = apply_variance_conditioning(
+        sparse, enabled=config.model.known_measurement_variance
+    )
     target = sparse["target"]
     diffusion_batch = diffusion.training_batch(
         target,

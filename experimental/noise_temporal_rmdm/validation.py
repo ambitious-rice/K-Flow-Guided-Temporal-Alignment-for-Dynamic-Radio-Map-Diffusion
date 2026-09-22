@@ -16,7 +16,7 @@ from rmdm_hvdit_v4_joint.training.engine import write_json_atomic
 from .checkpoint import load
 from .config import ExperimentConfig
 from .model import build_model
-from .noise import add_fixed_measurement_noise
+from .noise import add_fixed_measurement_noise, apply_variance_conditioning
 
 
 def validation_video_ids(
@@ -121,6 +121,9 @@ def run_validation(
                 sparse = sampling(dense, fixed_rate=float(rate))
                 sparse = add_fixed_measurement_noise(
                     sparse, float(sigma), seed=config.measurement_noise.seed
+                )
+                sparse = apply_variance_conditioning(
+                    sparse, enabled=config.model.known_measurement_variance
                 )
                 starts = sparse["start"].detach().cpu().tolist()
                 initial = deterministic_noise_like(

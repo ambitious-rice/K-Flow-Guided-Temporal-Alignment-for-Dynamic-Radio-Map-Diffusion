@@ -1,0 +1,46 @@
+data:
+  root: /data_16T_137/fzj/RMDM/resources/datasets/M20_Formal075_RadioMapSeerPack
+  split_file: configs/splits/m20_formal075_clean16_scene_split.json
+  workers: 16
+  prefetch_factor: 4
+  cache_size: 8
+  packed_cache_root: /home/fzj/.cache/rmdm/noise_temporal_clean16_v2
+measurement_noise:
+  clean_probability: 1.0
+  nominal_probability: 0.0
+  strong_probability: 0.0
+  nominal_sigma_min: 0.0
+  nominal_sigma_max: 0.05
+  strong_sigma_min: 0.05
+  strong_sigma_max: 0.09
+  reference_variance: 0.0081
+  seed: 20260921
+model:
+  # This is the clean, variance-blind RMDM baseline on the new Clean16 split.
+  known_measurement_variance: false
+train:
+  max_steps: 27000
+  per_gpu_batch_size: 64
+  gradient_accumulation_steps: 3
+  learning_rate: 0.0001
+  warmup_steps: 675
+  min_learning_rate: 0.00001
+  checkpoint_every_steps: 675
+validation:
+  subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_val.json
+  rates: [1.0, 3.0]
+  noise_standard_deviations: [0.0, 0.03, 0.05, 0.09]
+  frame_starts: [0, 50]
+  batch_size: 16
+  ddim_steps: 20
+  every_steps: 3375
+final_test:
+  subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_test.json
+  rates: [1.0, 2.0, 3.0]
+  noise_standard_deviations: [0.0, 0.01, 0.03, 0.05, 0.07, 0.09]
+  frame_starts: [0, 25, 50, 75]
+  batch_size: 16
+  ddim_steps: 20
+runtime:
+  output_root: /data_16T_137/fzj/RMDM/runs/rmdm_clean_baseline_clean16_20260922
+  phase: t1
