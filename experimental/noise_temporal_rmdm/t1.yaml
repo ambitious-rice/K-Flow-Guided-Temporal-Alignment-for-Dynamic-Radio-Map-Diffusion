@@ -4,7 +4,7 @@ data:
   workers: 16
   prefetch_factor: 4
   cache_size: 8
-  packed_cache_root: /dev/shm/noise_temporal_clean16_train_v1
+  packed_cache_root: /dev/shm/noise_temporal_clean16_train_v2
 measurement_noise:
   clean_probability: 0.20
   nominal_probability: 0.65

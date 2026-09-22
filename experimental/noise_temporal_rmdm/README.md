@@ -47,21 +47,25 @@ GPU selection is an operational launch decision: check live utilization, then
 set `CUDA_VISIBLE_DEVICES` and the Accelerate process count. It is deliberately
 not hard-coded or policy-gated in the experiment configuration.
 
-The formal loader uses a generated contiguous uint8 cache in `/dev/shm` so the
-900,000 frames can remain globally shuffled without reopening individual PNGs
-or decompressing whole traffic NPZ files per sample. Build it once per boot:
+The formal loader uses a generated contiguous uint8 mmap cache so the 900,000
+frames can remain globally shuffled without reopening individual PNGs or
+decompressing whole traffic NPZ files per sample. Targets are stored per video,
+vehicle grids once per episode, and building masks once per scene. Tx is not
+stored. Build it on the machine-local fast filesystem:
 
 ```bash
 PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
   -m experimental.noise_temporal_rmdm.build_cache \
   --config experimental/noise_temporal_rmdm/t1.yaml \
-  --output /dev/shm/noise_temporal_clean16_train_v1 --workers 8
+  --output /dev/shm/noise_temporal_clean16_train_v2 --workers 32
 ```
 
-The builder publishes `metadata.json` only after every array is complete, and
-the runner verifies the split-file digest before training. The original PNG/NPZ
-layout remains unchanged. If no packed cache is configured, the fallback loader
-shuffles video blocks to preserve NPZ cache locality.
+The builder writes to a `.building` directory, atomically publishes the final
+directory only after completion, and then compares 64 evenly spaced videos at
+their first, middle, and last frames against the source reader. The runner
+checks the source and split paths plus every array shape before training. The
+original PNG/NPZ layout remains unchanged. If no packed cache is configured,
+the fallback loader shuffles video blocks to preserve NPZ cache locality.
 
 To launch automatically as soon as a concurrently built cache becomes ready:
 
@@ -71,10 +75,12 @@ PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
   --config experimental/noise_temporal_rmdm/t1.yaml --gpus 0,2,4
 ```
 
-The cache is disposable and consumes about 30 GB of host RAM. Keep it while a
-resume may still be needed. After the formal checkpoint is safely complete and
-no further resume is planned, reclaim it with the exact scoped command:
-`rm -rf /dev/shm/noise_temporal_clean16_train_v1`. A reboot also clears it.
+The v2 cache is disposable and consumes about 15 GB. Keep it while training or
+checkpoint resume may still be needed. The local tmpfs cache path is
+`/dev/shm/noise_temporal_clean16_train_v2`; the lab-server NVMe cache path is
+`/home/fzj/.cache/rmdm/noise_temporal_clean16_v2`. Remove only that exact cache
+directory after the corresponding run is safely complete. A reboot clears the
+tmpfs copy but not the lab-server NVMe copy.
 
 The checked-in formal target uses the currently tested three-GPU layout:
 `128 x 3 GPUs x accumulation 1`, global batch 384, for 27,000 optimizer steps.

@@ -31,8 +31,8 @@ def main() -> None:
     if not config.data.packed_cache_root:
         raise ValueError("formal auto-launch requires data.packed_cache_root")
     deadline = time.monotonic() + args.timeout_seconds
-    metadata = cache_root / "metadata.json"
-    while not metadata.is_file():
+    manifest = cache_root / "manifest.json"
+    while not manifest.is_file():
         if time.monotonic() >= deadline:
             raise TimeoutError(f"packed cache did not become ready: {cache_root}")
         time.sleep(args.poll_seconds)
@@ -40,7 +40,7 @@ def main() -> None:
     split_file = Path(config.data.split_file)
     if not split_file.is_absolute():
         split_file = repository_root / split_file
-    reader = PackedFrameReader(cache_root, split_file=split_file)
+    reader = PackedFrameReader(cache_root, source_root=config.data.root, split_file=split_file)
     reader.read_window(reader.records[0], 0, 1)
     reader.read_window(reader.records[-1], config.data.frames_per_video - 1, 1)
     print(f"validated packed cache with {len(reader.records)} videos; launching formal training", flush=True)

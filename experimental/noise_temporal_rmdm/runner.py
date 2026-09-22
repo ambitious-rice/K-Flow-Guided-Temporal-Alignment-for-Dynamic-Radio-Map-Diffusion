@@ -95,7 +95,9 @@ def run(
     if not split_file.is_absolute():
         split_file = repository_root / split_file
     packed_reader = (
-        PackedFrameReader(config.data.packed_cache_root, split_file=split_file)
+        PackedFrameReader(
+            config.data.packed_cache_root, source_root=config.data.root, split_file=split_file
+        )
         if config.data.packed_cache_root else None
     )
     dataset: Any = WindowDataset(
