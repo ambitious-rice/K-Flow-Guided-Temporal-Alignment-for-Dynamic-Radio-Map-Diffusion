@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import random
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,20 @@ def _contract(phase: str) -> tuple[str, str]:
     if phase == "t16":
         return T16_SCHEMA, T16_ARCHITECTURE_ID
     raise ValueError(f"unsupported checkpoint phase: {phase}")
+
+
+def _load_payload(path: str | Path) -> dict[str, Any]:
+    """Load local NumPy-2 checkpoints on the remote NumPy-1 environment."""
+
+    resolved = Path(path).expanduser().resolve()
+    try:
+        return torch.load(resolved, map_location="cpu", weights_only=False)
+    except ModuleNotFoundError as error:
+        if error.name not in {"numpy._core", "numpy._core.multiarray"}:
+            raise
+        sys.modules.setdefault("numpy._core", np.core)
+        sys.modules.setdefault("numpy._core.multiarray", np.core.multiarray)
+        return torch.load(resolved, map_location="cpu", weights_only=False)
 
 
 def _atomic_save(path: str | Path, payload: dict[str, Any]) -> None:
@@ -95,7 +110,7 @@ def load(
     scheduler: Any | None = None,
     expected_phase: str = "t1",
 ) -> dict[str, Any]:
-    payload = torch.load(Path(path).expanduser().resolve(), map_location="cpu", weights_only=False)
+    payload = _load_payload(path)
     schema, architecture_id = _contract(expected_phase)
     if payload.get("schema") != schema or payload.get("architecture_id") != architecture_id:
         raise ValueError(f"checkpoint schema or architecture does not match noise-aware {expected_phase}")
@@ -112,7 +127,7 @@ def load(
 def initialize_t16_from_t1(path: str | Path, model: torch.nn.Module) -> dict[str, Any]:
     """Strictly copy every T1 tensor and leave only declared temporal tensors new."""
 
-    payload = torch.load(Path(path).expanduser().resolve(), map_location="cpu", weights_only=False)
+    payload = _load_payload(path)
     if (
         payload.get("schema") != T1_SCHEMA
         or payload.get("architecture_id") != T1_ARCHITECTURE_ID
