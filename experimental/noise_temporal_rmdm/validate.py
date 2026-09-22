@@ -19,8 +19,27 @@ def main() -> None:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--ddim-steps", type=int, default=0)
     parser.add_argument("--max-batches", type=int, default=0)
+    parser.add_argument("--data-root")
+    parser.add_argument("--manifest")
+    parser.add_argument("--rates", type=float, nargs="+")
+    parser.add_argument("--sigmas", type=float, nargs="+")
+    parser.add_argument("--frame-starts", type=int, nargs="+")
+    parser.add_argument("--batch-size", type=int)
+    parser.add_argument("--workers", type=int)
     args = parser.parse_args()
     config = load_config(args.config)
+    protocol = config.validation if args.split == "val" else config.final_test
+    for argument, field in (("manifest", "subset_manifest"), ("rates", "rates"),
+                            ("sigmas", "noise_standard_deviations"),
+                            ("frame_starts", "frame_starts"), ("batch_size", "batch_size")):
+        value = getattr(args, argument)
+        if value is not None:
+            setattr(protocol, field, value)
+    if args.data_root is not None:
+        config.data.root = args.data_root
+    if args.workers is not None:
+        config.data.workers = args.workers
+    config.validate()
     summary = run_validation(
         config,
         checkpoint_path=args.checkpoint,

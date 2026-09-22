@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import torch
@@ -108,6 +109,7 @@ def run_validation(
     sampling = SamplingPolicy(config.sampling, split=evaluation_split)
     sampler = DDIMSampler(config.diffusion)
     results = []
+    started = time.monotonic()
     for rate in protocol.rates:
         for sigma in protocol.noise_standard_deviations:
             mse_sum = mae_sum = psnr_sum = 0.0
@@ -146,6 +148,7 @@ def run_validation(
                 "mae": mae_sum / count,
                 "psnr": psnr_sum / count,
             })
+            print(json.dumps({**results[-1], "elapsed_seconds": time.monotonic() - started}), flush=True)
     summary = {
         "schema": f"noise_temporal_rmdm_{config.runtime.phase}_evaluation_v1",
         "phase": config.runtime.phase,
@@ -157,6 +160,10 @@ def run_validation(
         "ddim_steps": int(ddim_steps or protocol.ddim_steps),
         "tx_input": False,
         "source_loss": False,
+        "manifest": str(manifest),
+        "frame_starts": protocol.frame_starts,
+        "batch_size": protocol.batch_size,
+        "elapsed_seconds": time.monotonic() - started,
         "results": results,
     }
     write_json_atomic(Path(output_path).expanduser().resolve(), summary)
