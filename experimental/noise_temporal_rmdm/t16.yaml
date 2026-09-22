@@ -1,0 +1,56 @@
+data:
+  root: /data_16T_137/fzj/RMDM/resources/datasets/M20_Formal075_RadioMapSeerPack
+  split_file: configs/splits/m20_formal075_clean16_scene_split.json
+  image_size: 128
+  frames_per_video: 100
+  window_size: 16
+  workers: 12
+  prefetch_factor: 4
+  cache_size: 8
+  packed_cache_root: /home/fzj/.cache/rmdm/noise_temporal_clean16_v2
+measurement_noise:
+  clean_probability: 0.20
+  nominal_probability: 0.65
+  strong_probability: 0.15
+  nominal_sigma_min: 0.0
+  nominal_sigma_max: 0.05
+  strong_sigma_min: 0.05
+  strong_sigma_max: 0.09
+  reference_variance: 0.0081
+  seed: 20260921
+model:
+  temporal_enabled: true
+  temporal_hidden_channels: 192
+  temporal_layers: 4
+  temporal_heads: 6
+  temporal_downsample: 4
+  temporal_mlp_ratio: 4.0
+  expected_trainable_parameters_min: 65000000
+  expected_trainable_parameters_max: 90000000
+train:
+  max_steps: 21600
+  per_gpu_batch_size: 3
+  gradient_accumulation_steps: 5
+  learning_rate: 0.00005
+  warmup_steps: 540
+  min_learning_rate: 0.000005
+  checkpoint_every_steps: 2700
+validation:
+  subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_val.json
+  rates: [1.0, 3.0]
+  noise_standard_deviations: [0.0, 0.03, 0.05, 0.09]
+  frame_starts: [0, 50]
+  batch_size: 1
+  ddim_steps: 20
+  every_steps: 2700
+final_test:
+  subset_manifest: configs/manifests/noise_temporal_rmdm_clean16_test.json
+  rates: [1.0, 2.0, 3.0]
+  noise_standard_deviations: [0.0, 0.01, 0.03, 0.05, 0.07, 0.09]
+  frame_starts: [0, 25, 50, 75]
+  batch_size: 1
+  ddim_steps: 20
+runtime:
+  output_root: /data_16T_137/fzj/RMDM/runs/noise_temporal_rmdm
+  phase: t16
+  initialize_from_t1: /data_16T_137/fzj/RMDM/resources/components/noise_temporal_rmdm_t1_20260922_complete/checkpoint/step_020250.pth

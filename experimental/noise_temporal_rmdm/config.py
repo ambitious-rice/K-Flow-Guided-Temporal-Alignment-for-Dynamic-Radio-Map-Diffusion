@@ -15,6 +15,7 @@ class DataConfig:
     split_file: str = "configs/splits/m20_formal075_clean16_scene_split.json"
     image_size: int = 128
     frames_per_video: int = 100
+    window_size: int = 1
     workers: int = 8
     prefetch_factor: int = 2
     cache_size: int = 8
@@ -65,6 +66,12 @@ class ModelConfig:
     variance_mlp_width: int = 512
     dropout: float = 0.0
     gradient_checkpointing: bool = False
+    temporal_enabled: bool = False
+    temporal_hidden_channels: int = 192
+    temporal_layers: int = 4
+    temporal_heads: int = 6
+    temporal_downsample: int = 4
+    temporal_mlp_ratio: float = 4.0
     expected_trainable_parameters_min: int = 50_000_000
     expected_trainable_parameters_max: int = 180_000_000
 
@@ -144,6 +151,8 @@ class FinalTestConfig:
 @dataclass
 class RuntimeConfig:
     output_root: str = "runs/noise_temporal_rmdm"
+    phase: str = "t1"
+    initialize_from_t1: str = ""
 
 
 @dataclass
@@ -160,8 +169,10 @@ class ExperimentConfig:
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
 
     def validate(self) -> None:
-        if self.data.image_size <= 0 or self.data.frames_per_video <= 0:
+        if self.data.image_size <= 0 or self.data.frames_per_video <= 0 or self.data.window_size <= 0:
             raise ValueError("data dimensions must be positive")
+        if self.data.window_size > self.data.frames_per_video:
+            raise ValueError("window_size cannot exceed frames_per_video")
         _distribution("sampling", self.sampling.base_rates, self.sampling.base_probabilities)
         noise = self.measurement_noise
         _distribution(
@@ -187,6 +198,21 @@ class ExperimentConfig:
             raise ValueError("attention widths must be divisible by attention_heads")
         if self.model.residual_blocks_per_level <= 0 or self.model.hwm_blocks_per_level <= 0:
             raise ValueError("blocks per level must be positive")
+        if self.runtime.phase not in {"t1", "t16"}:
+            raise ValueError("runtime.phase must be t1 or t16")
+        if self.runtime.phase == "t1" and (self.data.window_size != 1 or self.model.temporal_enabled):
+            raise ValueError("T1 requires window_size=1 and temporal_enabled=false")
+        if self.runtime.phase == "t16" and (self.data.window_size != 16 or not self.model.temporal_enabled):
+            raise ValueError("T16 requires window_size=16 and temporal_enabled=true")
+        if self.model.temporal_enabled:
+            if self.model.temporal_hidden_channels <= 0 or self.model.temporal_layers <= 0:
+                raise ValueError("temporal width and layer count must be positive")
+            if self.model.temporal_heads <= 0 or self.model.temporal_hidden_channels % self.model.temporal_heads:
+                raise ValueError("temporal_hidden_channels must be divisible by temporal_heads")
+            if self.model.temporal_downsample <= 0 or self.data.image_size % self.model.temporal_downsample:
+                raise ValueError("image_size must be divisible by temporal_downsample")
+            if self.model.temporal_mlp_ratio <= 0:
+                raise ValueError("temporal_mlp_ratio must be positive")
         if self.train.max_steps <= 0 or self.train.checkpoint_every_steps <= 0:
             raise ValueError("training steps must be positive")
         if self.train.mixed_precision not in {"no", "fp16", "bf16"}:

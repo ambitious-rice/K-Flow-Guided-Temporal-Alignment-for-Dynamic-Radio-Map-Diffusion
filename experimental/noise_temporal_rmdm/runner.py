@@ -24,7 +24,7 @@ from rmdm_hvdit_v4_joint.training.engine import (
     write_json_atomic,
 )
 
-from .checkpoint import load, save
+from .checkpoint import initialize_t16_from_t1, load, save
 from .config import ExperimentConfig
 from .data_order import VideoBlockShuffleSampler
 from .model import build_model, parameter_counts
@@ -33,9 +33,12 @@ from .step import training_step
 from .validation import validation_video_ids
 
 
-def output_directory(repository_root: str | Path) -> Path:
+def output_directory(repository_root: str | Path, config: ExperimentConfig) -> Path:
     root = Path(repository_root).expanduser().resolve()
-    return root / "runs" / "noise_temporal_rmdm" / "t1"
+    output_root = Path(config.runtime.output_root)
+    if not output_root.is_absolute():
+        output_root = root / output_root
+    return output_root / config.runtime.phase
 
 
 def source_metadata(repository_root: Path) -> dict[str, Any]:
@@ -60,12 +63,14 @@ def run(
     config_path: str | Path,
     repository_root: str | Path,
     resume_from: str = "",
+    initialize_from_t1: str = "",
 ) -> None:
-    """Run training only; formal DDIM validation is intentionally a separate job."""
+    """Run T1 or T16 training; formal DDIM validation remains a separate job."""
 
     repository_root = Path(repository_root).expanduser().resolve()
     source = source_metadata(repository_root)
-    output = output_directory(repository_root)
+    phase = config.runtime.phase
+    output = output_directory(repository_root, config)
     if not resume_from and output.exists() and any(output.iterdir()):
         raise FileExistsError(f"refusing to overwrite non-empty stage directory: {output}")
     accelerator = make_accelerator(
@@ -76,6 +81,12 @@ def run(
     )
     seed_everything(config.train.seed)
     model = build_model(config)
+    initialization = None
+    if not resume_from and phase == "t16":
+        source_t1 = initialize_from_t1 or config.runtime.initialize_from_t1
+        if not source_t1:
+            raise ValueError("T16 requires --initialize-from-t1 or runtime.initialize_from_t1")
+        initialization = initialize_t16_from_t1(source_t1, model)
     trainable, total = parameter_counts(model)
     if config.model.expected_trainable_parameters_min and not (
         config.model.expected_trainable_parameters_min <= trainable
@@ -104,27 +115,34 @@ def run(
         root=None if packed_reader is not None else config.data.root,
         split="train",
         split_file=None if packed_reader is not None else str(split_file),
-        window_size=1,
+        window_size=config.data.window_size,
         seed=config.sampling.seed,
         cache_size=config.data.cache_size,
         include_tx=False,
-        fixed_starts=tuple(range(config.data.frames_per_video)),
+        fixed_starts=(
+            tuple(range(config.data.frames_per_video)) if config.data.window_size == 1 else None
+        ),
         reader=packed_reader,
     )
     # Packed arrays make fully random frame order cheap. The video-block order
     # is only the fallback for the original PNG/NPZ layout.
-    sampler = None if packed_reader is not None else VideoBlockShuffleSampler(
-        len(dataset), frames_per_video=config.data.frames_per_video, seed=config.train.seed
+    sampler = (
+        VideoBlockShuffleSampler(
+            len(dataset), frames_per_video=config.data.frames_per_video, seed=config.train.seed
+        )
+        if packed_reader is None and config.data.window_size == 1 else None
     )
     loader = DataLoader(
         dataset,
         batch_size=config.train.per_gpu_batch_size,
         sampler=sampler,
-        shuffle=packed_reader is not None,
+        shuffle=sampler is None,
         num_workers=config.data.workers,
         prefetch_factor=config.data.prefetch_factor if config.data.workers > 0 else None,
         pin_memory=True,
-        persistent_workers=config.data.workers > 0,
+        # T16 start positions change with dataset epoch; restarting workers at
+        # epoch boundaries propagates that state without shared mutable logic.
+        persistent_workers=config.data.workers > 0 and config.data.window_size == 1,
         drop_last=True,
     )
     optimizer = make_optimizer(
@@ -143,7 +161,7 @@ def run(
     )
     global_step = epoch = offset = 0
     if resume_from:
-        payload = load(resume_from, model, optimizer, scheduler)
+        payload = load(resume_from, model, optimizer, scheduler, expected_phase=phase)
         global_step = int(payload["global_step"])
         epoch = int(payload["epoch"])
         offset = int(payload["microbatches_consumed_in_epoch"])
@@ -154,7 +172,8 @@ def run(
     checkpoint_path = output / "checkpoints" / "last.pth"
     if accelerator.is_main_process:
         status = {
-            "schema": "noise_temporal_rmdm_t1_status_v1",
+            "schema": f"noise_temporal_rmdm_{phase}_status_v1",
+            "phase": phase,
             "state": "training",
             "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "global_step": global_step,
@@ -166,6 +185,7 @@ def run(
             "validation_videos": len(validation_ids),
             "excluded_validation_scenes": config.validation.excluded_scenes,
             "source": source,
+            "initialization": initialization,
         }
         write_json_atomic(output / "status.json", status)
         append_jsonl(output / "history.jsonl", {"event": "start_or_resume", **status})
@@ -213,7 +233,10 @@ def run(
                     global_step=global_step, epoch=epoch,
                     microbatches_consumed_in_epoch=last_microbatch,
                     source_provenance=source,
-                    extra={"validation_pending": global_step % config.validation.every_steps == 0},
+                    extra={
+                        "validation_pending": global_step % config.validation.every_steps == 0,
+                        "initialization": initialization,
+                    },
                 )
                 if global_step % config.validation.every_steps == 0:
                     save(
@@ -222,7 +245,7 @@ def run(
                         global_step=global_step, epoch=epoch,
                         microbatches_consumed_in_epoch=last_microbatch,
                         source_provenance=source,
-                        extra={"validation_pending": True},
+                        extra={"validation_pending": True, "initialization": initialization},
                     )
             if global_step >= config.train.max_steps:
                 break
@@ -230,7 +253,8 @@ def run(
         offset = 0
     if accelerator.is_main_process:
         completed = {
-            "schema": "noise_temporal_rmdm_t1_status_v1", "state": "complete",
+            "schema": f"noise_temporal_rmdm_{phase}_status_v1", "state": "complete",
+            "phase": phase,
             "global_step": global_step,
             "completed_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "checkpoint": str(checkpoint_path), "trainable_parameters": trainable,

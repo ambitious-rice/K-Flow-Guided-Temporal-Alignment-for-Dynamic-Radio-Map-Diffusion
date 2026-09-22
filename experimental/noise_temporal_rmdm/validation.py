@@ -86,7 +86,7 @@ def run_validation(
         root=config.data.root,
         split=evaluation_split,
         split_file=str(split_file),
-        window_size=1,
+        window_size=config.data.window_size,
         seed=config.sampling.seed,
         cache_size=config.data.cache_size,
         include_tx=False,
@@ -103,7 +103,7 @@ def run_validation(
     )
     torch_device = torch.device(device)
     model = build_model(config).to(torch_device)
-    payload = load(checkpoint_path, model)
+    payload = load(checkpoint_path, model, expected_phase=config.runtime.phase)
     model.eval()
     sampling = SamplingPolicy(config.sampling, split=evaluation_split)
     sampler = DDIMSampler(config.diffusion)
@@ -147,7 +147,9 @@ def run_validation(
                 "psnr": psnr_sum / count,
             })
     summary = {
-        "schema": "noise_temporal_rmdm_t1_evaluation_v1",
+        "schema": f"noise_temporal_rmdm_{config.runtime.phase}_evaluation_v1",
+        "phase": config.runtime.phase,
+        "window_size": config.data.window_size,
         "evaluation_split": evaluation_split,
         "selection_role": "checkpoint_selection" if evaluation_split == "val" else "final_report_only",
         "checkpoint": str(Path(checkpoint_path).expanduser().resolve()),

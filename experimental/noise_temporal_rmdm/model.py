@@ -1,4 +1,4 @@
-"""Noise-aware, Tx-blind T1 RMDM.
+"""Noise-aware, Tx-blind T1/T16 RMDM.
 
 The observation path is confined to a variance-conditioned HWM branch. The
 diffusion denoiser keeps the legacy ``UNetModel_newpreview`` topology and sees
@@ -202,6 +202,96 @@ class IdentityTemporalHook(nn.Module):
         return value
 
 
+class TemporalAttentionBlock(nn.Module):
+    """Pre-normalized temporal attention and MLP for one spatial token."""
+
+    def __init__(self, channels: int, heads: int, mlp_ratio: float, dropout: float) -> None:
+        super().__init__()
+        self.attention_norm = nn.LayerNorm(channels)
+        self.attention = nn.MultiheadAttention(
+            channels, heads, dropout=dropout, batch_first=True
+        )
+        self.mlp_norm = nn.LayerNorm(channels)
+        hidden = int(round(channels * mlp_ratio))
+        self.mlp = nn.Sequential(
+            nn.Linear(channels, hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden, channels),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, value: torch.Tensor) -> torch.Tensor:
+        normalized = self.attention_norm(value)
+        attended = self.attention(normalized, normalized, normalized, need_weights=False)[0]
+        value = value + attended
+        return value + self.mlp(self.mlp_norm(value))
+
+
+class TemporalStageRefiner(nn.Module):
+    """Learn motion-aware residuals at a compact spatial scale."""
+
+    def __init__(self, in_channels: int, config: ModelConfig, *, window_size: int) -> None:
+        super().__init__()
+        hidden = config.temporal_hidden_channels
+        factor = config.temporal_downsample
+        self.window_size = int(window_size)
+        self.encoder = nn.Conv2d(in_channels, hidden, factor, stride=factor)
+        self.spatial = PlainResBlock(hidden, hidden, config.dropout)
+        self.position = nn.Parameter(torch.zeros(1, self.window_size, hidden))
+        nn.init.normal_(self.position, std=0.02)
+        self.blocks = nn.ModuleList([
+            TemporalAttentionBlock(
+                hidden, config.temporal_heads, config.temporal_mlp_ratio, config.dropout
+            )
+            for _ in range(config.temporal_layers)
+        ])
+        self.output = nn.ConvTranspose2d(hidden, in_channels, factor, stride=factor)
+        nn.init.zeros_(self.output.weight)
+        nn.init.zeros_(self.output.bias)
+
+    def forward(self, value: torch.Tensor) -> torch.Tensor:
+        if value.ndim != 5:
+            raise ValueError("temporal stage input must be [B,T,C,H,W]")
+        batch, time, channels, height, width = value.shape
+        if time != self.window_size:
+            raise ValueError(f"temporal stage requires T={self.window_size}, got T={time}")
+        encoded = self.spatial(self.encoder(value.reshape(batch * time, channels, height, width)))
+        _, hidden, small_height, small_width = encoded.shape
+        sequence = (
+            encoded.reshape(batch, time, hidden, small_height, small_width)
+            .permute(0, 3, 4, 1, 2)
+            .reshape(batch * small_height * small_width, time, hidden)
+        )
+        sequence = sequence + self.position
+        for block in self.blocks:
+            sequence = block(sequence)
+        decoded = (
+            sequence.reshape(batch, small_height, small_width, time, hidden)
+            .permute(0, 3, 4, 1, 2)
+            .reshape(batch * time, hidden, small_height, small_width)
+        )
+        residual = self.output(decoded).reshape(batch, time, channels, height, width)
+        return value + residual
+
+
+class JointTemporalHook(nn.Module):
+    """Independent temporal capacity at the three stable model boundaries."""
+
+    def __init__(self, config: ModelConfig, *, window_size: int) -> None:
+        super().__init__()
+        self.stages = nn.ModuleDict({
+            "calibration": TemporalStageRefiner(1, config, window_size=window_size),
+            "condition": TemporalStageRefiner(4, config, window_size=window_size),
+            "denoised": TemporalStageRefiner(1, config, window_size=window_size),
+        })
+
+    def forward(self, stage: str, value: torch.Tensor) -> torch.Tensor:
+        if stage not in self.stages:
+            raise KeyError(f"unknown temporal stage: {stage}")
+        return self.stages[stage](value)
+
+
 class LegacyDiffusionBackbone(nn.Module):
     """Exact legacy RMDM diffusion U-Net topology, without its old HWM."""
 
@@ -235,13 +325,14 @@ class LegacyDiffusionBackbone(nn.Module):
 
 
 class NoiseAwareRMDM(nn.Module):
-    """Framewise T1 model with explicit temporal-shaped caches and no Tx input."""
+    """T1/T16 model with stable temporal boundaries and no Tx input."""
 
     def __init__(
         self,
         config: ModelConfig,
         *,
         image_size: int,
+        window_size: int,
         reference_variance: float,
     ) -> None:
         super().__init__()
@@ -250,7 +341,10 @@ class NoiseAwareRMDM(nn.Module):
         )
         self.hwm = NoiseAwareHWM(config)
         self.denoiser = LegacyDiffusionBackbone(config, image_size)
-        self.temporal_hook: nn.Module = IdentityTemporalHook()
+        self.temporal_hook: nn.Module = (
+            JointTemporalHook(config, window_size=window_size)
+            if config.temporal_enabled else IdentityTemporalHook()
+        )
 
     @staticmethod
     def _flatten(value: torch.Tensor) -> torch.Tensor:
@@ -325,6 +419,7 @@ def build_model(config: ExperimentConfig) -> NoiseAwareRMDM:
     return NoiseAwareRMDM(
         config.model,
         image_size=config.data.image_size,
+        window_size=config.data.window_size,
         reference_variance=config.measurement_noise.reference_variance,
     )
 

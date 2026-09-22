@@ -1,4 +1,4 @@
-"""The exact T1 objective: epsilon DDPM + clean cal + PINN."""
+"""Shared T1/T16 objective: epsilon DDPM + clean calibration + PINN."""
 
 from __future__ import annotations
 

@@ -10,11 +10,20 @@ from typing import Any
 import numpy as np
 import torch
 
-from . import ARCHITECTURE_ID
+from . import T1_ARCHITECTURE_ID, T16_ARCHITECTURE_ID
 
 
 T1_SCHEMA = "noise_temporal_rmdm_t1_checkpoint_v2"
 T16_INIT_SCHEMA = "noise_temporal_rmdm_t16_init_v2"
+T16_SCHEMA = "noise_temporal_rmdm_t16_checkpoint_v1"
+
+
+def _contract(phase: str) -> tuple[str, str]:
+    if phase == "t1":
+        return T1_SCHEMA, T1_ARCHITECTURE_ID
+    if phase == "t16":
+        return T16_SCHEMA, T16_ARCHITECTURE_ID
+    raise ValueError(f"unsupported checkpoint phase: {phase}")
 
 
 def _atomic_save(path: str | Path, payload: dict[str, Any]) -> None:
@@ -37,10 +46,12 @@ def build_payload(
     source_provenance: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    phase = str(config.runtime.phase)
+    schema, architecture_id = _contract(phase)
     return {
-        "schema": T1_SCHEMA,
-        "architecture_id": ARCHITECTURE_ID,
-        "phase": "t1",
+        "schema": schema,
+        "architecture_id": architecture_id,
+        "phase": phase,
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict(),
@@ -82,15 +93,56 @@ def load(
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer | None = None,
     scheduler: Any | None = None,
+    expected_phase: str = "t1",
 ) -> dict[str, Any]:
     payload = torch.load(Path(path).expanduser().resolve(), map_location="cpu", weights_only=False)
-    if payload.get("schema") != T1_SCHEMA or payload.get("architecture_id") != ARCHITECTURE_ID:
-        raise ValueError("checkpoint schema or architecture does not match noise-aware T1")
-    if payload.get("phase") != "t1":
-        raise ValueError("checkpoint phase is not t1")
+    schema, architecture_id = _contract(expected_phase)
+    if payload.get("schema") != schema or payload.get("architecture_id") != architecture_id:
+        raise ValueError(f"checkpoint schema or architecture does not match noise-aware {expected_phase}")
+    if payload.get("phase") != expected_phase:
+        raise ValueError(f"checkpoint phase is not {expected_phase}")
     model.load_state_dict(payload["model"], strict=True)
     if optimizer is not None:
         optimizer.load_state_dict(payload["optimizer"])
     if scheduler is not None:
         scheduler.load_state_dict(payload["scheduler"])
     return payload
+
+
+def initialize_t16_from_t1(path: str | Path, model: torch.nn.Module) -> dict[str, Any]:
+    """Strictly copy every T1 tensor and leave only declared temporal tensors new."""
+
+    payload = torch.load(Path(path).expanduser().resolve(), map_location="cpu", weights_only=False)
+    if (
+        payload.get("schema") != T1_SCHEMA
+        or payload.get("architecture_id") != T1_ARCHITECTURE_ID
+        or payload.get("phase") != "t1"
+    ):
+        raise ValueError("T16 initialization requires a noise-aware T1 checkpoint")
+    source = payload.get("model")
+    if not isinstance(source, dict):
+        raise ValueError("T1 checkpoint has no model state")
+    target_keys = set(model.state_dict())
+    source_keys = set(source)
+    unexpected = sorted(source_keys - target_keys)
+    expected_new = sorted(target_keys - source_keys)
+    if unexpected or not expected_new or any(
+        not key.startswith("temporal_hook.stages.") for key in expected_new
+    ):
+        raise ValueError(
+            f"T1/T16 state contract mismatch; unexpected={unexpected}, new={expected_new[:8]}"
+        )
+    incompatible = model.load_state_dict(source, strict=False)
+    if sorted(incompatible.missing_keys) != expected_new or incompatible.unexpected_keys:
+        raise RuntimeError("T1-to-T16 state loading did not match the declared temporal extension")
+    for name, module in model.named_modules():
+        if name.endswith(".output"):
+            if not torch.count_nonzero(module.weight).eq(0) or not torch.count_nonzero(module.bias).eq(0):
+                raise RuntimeError(f"temporal output projection is not zero initialized: {name}")
+    return {
+        "schema": T16_INIT_SCHEMA,
+        "source_checkpoint": str(Path(path).expanduser().resolve()),
+        "source_global_step": int(payload["global_step"]),
+        "copied_tensors": len(source_keys),
+        "new_temporal_tensors": len(expected_new),
+    }

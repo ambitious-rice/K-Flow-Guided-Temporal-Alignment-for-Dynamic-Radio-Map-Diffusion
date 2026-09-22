@@ -1,7 +1,8 @@
 # Noise-aware Tx-blind RMDM
 
-This experiment trains the single-frame T1 model that will initialize a later
-T16 temporal model. The local Git checkout is the source of truth.
+This experiment contains the completed single-frame T1 model and its T16
+joint spatio-temporal continuation. The local Git checkout is the source of
+truth.
 
 ## Inputs and objective
 
@@ -75,7 +76,7 @@ PYTHONPATH=src:. /data_p6/fzj/conda/envs/RMDM/bin/python \
   --config experimental/noise_temporal_rmdm/t1.yaml --gpus 0,2,4
 ```
 
-The v2 cache is disposable and consumes about 15 GB. Keep it while training or
+The v2 cache is disposable and consumes about 17 GB. Keep it while training or
 checkpoint resume may still be needed. The local tmpfs cache path is
 `/dev/shm/noise_temporal_clean16_train_v2`; the lab-server NVMe cache path is
 `/home/fzj/.cache/rmdm/noise_temporal_clean16_v2`. Remove only that exact cache
@@ -126,3 +127,62 @@ revision. Development-only smoke programs and tests live on the dedicated
 `experimental/noise-temporal-rmdm-smoke` branch. The production runner records
 Git metadata but does not implement policy as runtime gate code; see this
 experiment's scoped `AGENTS.md`.
+
+## T16 joint model
+
+T16 uses continuous 16-frame windows from one video. The measurement-noise
+sampler already draws one sigma per clip and independent pixel/frame errors
+conditional on that sigma, so no noise semantics change from T1. Tx remains
+absent from the reader, cache, model, and loss.
+
+The complete T1 condition branch and legacy diffusion U-Net are copied from the
+validation-selected step-20250 checkpoint. Three temporal refiners are added at
+the existing `[B,T,C,H,W]` boundaries:
+
+- the clean calibration prior produced by HWM;
+- the four-channel diffusion condition `[building, vehicle, calibration,
+  normalized_variance]`;
+- the predicted diffusion noise.
+
+Each refiner encodes frames to a 32x32 spatial grid with 192 channels, applies
+four pre-normalized six-head temporal-attention/MLP blocks independently at
+each spatial location, and decodes a residual at the original resolution. The
+spatial encoder also contains a residual convolutional block, allowing each
+temporal token to summarize a local image region. Across the three refiners,
+T16 adds 7,379,142 trainable parameters: T1 has 63,219,298 parameters and T16
+has 70,598,440. All weights remain jointly trainable.
+
+Each temporal residual output projection is zero initialized. The strict
+initializer accepts only the T1 checkpoint schema, copies every one of its 548
+state tensors, and permits missing keys only below `temporal_hook.stages`. As a
+result, the initial T16 function is exactly equal to applying the selected T1
+model frame by frame; temporal behavior is learned without an initialization
+jump.
+
+The reviewed remote configuration is `t16.yaml`. It points to the persistent
+17 GB deduplicated mmap cache and selected T1 checkpoint on `Nice2`. The code is
+ready but formal training must not be launched until user approval.
+
+Proposed two-GPU launch after approval:
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1 PYTHONPATH=src:. \
+  /share1/fzj/miniconda3/envs/RMDM/bin/python \
+  -m accelerate.commands.launch --multi_gpu --num_processes 2 \
+  --num_machines 1 --mixed_precision bf16 --dynamo_backend no \
+  --main_process_port 29629 \
+  -m experimental.noise_temporal_rmdm.train \
+  --config experimental/noise_temporal_rmdm/t16.yaml \
+  --repository-root /data_16T_137/fzj/RMDM/project
+```
+
+The reviewed baseline is three clips per GPU with accumulation 5: 30 clips or
+480 frames per optimizer update. Train for 21,600 optimizer steps with a
+`5e-5` cosine learning rate, 540-step warmup, and `5e-6` floor. This exposes
+exactly 10.368 million frames, matching T1. Save and validate every 2,700
+steps. Checkpoint selection uses only the tracked two-scene DDIM20
+validation protocol; evaluate at least the final four milestones before
+selection. The partial two-scene DDIM20 test is run once after selection and is
+report-only. Full 128x128 BF16 forward/backward checks used 10.37 GiB for one
+clip and 40.13 GiB for four clips on a 96 GB GPU; three clips leaves necessary
+headroom on each remote 48 GB GPU for optimizer and DDP/NCCL state.
