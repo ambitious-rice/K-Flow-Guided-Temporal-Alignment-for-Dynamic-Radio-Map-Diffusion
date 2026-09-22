@@ -31,7 +31,16 @@ from diffusers import DDPMScheduler
 from torch.utils.data import DataLoader
 
 from lib.loaders import DynamicSparseRadioMapRMDM
-from utils import build_unet_from_config, cal_pinn, cal_pinn_masked, masked_mean
+from rmdm.config import SamplingConfig
+from rmdm.data import SamplingPolicy, WindowDataset
+from experimental.noise_temporal_rmdm.packed_data import PackedFrameReader
+from utils import (
+    build_unet_from_config,
+    cal_pinn,
+    cal_pinn_masked,
+    cal_pinn_without_source,
+    masked_mean,
+)
 
 
 DEFAULT_DATA_DIR = "/data/fzj/CARLA_0.9.15/datasets/DynamicRadioMap/M20_Formal075_RadioMapSeerPack"
@@ -50,6 +59,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data_dir", default=DEFAULT_DATA_DIR)
     parser.add_argument("--scene_split_file", default=DEFAULT_SCENE_SPLIT)
+    parser.add_argument(
+        "--packed_cache_root",
+        default="",
+        help="Use the Tx-free packed Clean16 reader when set.",
+    )
     parser.add_argument("--image_size", type=int, default=128)
     parser.add_argument("--frame_stride", type=int, default=1)
     parser.add_argument("--cache_size", type=int, default=8)
@@ -229,17 +243,46 @@ def main() -> None:
             },
         )
 
-    dataset = DynamicSparseRadioMapRMDM(
-        root=args.data_dir,
-        split="train",
-        split_file=args.scene_split_file,
-        frame_stride=args.frame_stride,
-        cache_size=args.cache_size,
-        tx_heatmap_sigma_px=args.tx_heatmap_sigma_px,
-        sampling_mode="train",
-        sample_rates=sample_rates,
-        manifest_seed=args.mask_seed,
-    )
+    tx_blind_packed = bool(args.packed_cache_root)
+    if tx_blind_packed:
+        if not args.without_tx or args.use_tx_source_supervision:
+            raise ValueError("Tx-free packed training requires --without_tx and no source supervision")
+        reader = PackedFrameReader(
+            args.packed_cache_root,
+            source_root=args.data_dir,
+            split_file=args.scene_split_file,
+        )
+        dataset = WindowDataset(
+            reader=reader,
+            split="train",
+            window_size=1,
+            seed=args.mask_seed,
+            include_tx=False,
+            fixed_starts=tuple(range(100)),
+        )
+        sparse_sampling = SamplingPolicy(
+            SamplingConfig(
+                seed=args.mask_seed,
+                homogeneous_probability=1.0,
+                base_rates=[float(rate) for rate in sample_rates],
+                base_probabilities=[1.0 / len(sample_rates)] * len(sample_rates),
+                extreme_probability_given_heterogeneous=0.0,
+            ),
+            split="train",
+        )
+    else:
+        dataset = DynamicSparseRadioMapRMDM(
+            root=args.data_dir,
+            split="train",
+            split_file=args.scene_split_file,
+            frame_stride=args.frame_stride,
+            cache_size=args.cache_size,
+            tx_heatmap_sigma_px=args.tx_heatmap_sigma_px,
+            sampling_mode="train",
+            sample_rates=sample_rates,
+            manifest_seed=args.mask_seed,
+        )
+        sparse_sampling = None
     loader = DataLoader(
         dataset,
         batch_size=args.batch_size,
@@ -326,6 +369,9 @@ def main() -> None:
     completed_epochs = start_epoch
     stopped_early = False
     for epoch in range(start_epoch, args.epochs):
+        if tx_blind_packed:
+            dataset.set_epoch(epoch)
+            sparse_sampling.set_epoch(epoch)
         model.train()
         epoch_start = time.monotonic()
         epoch_sums = torch.zeros(4, device=accelerator.device)
@@ -333,9 +379,27 @@ def main() -> None:
         optimizer.zero_grad(set_to_none=True)
         reached_step_limit = False
         for local_step, batch in enumerate(loader):
-            conditions = batch["inputs"].to(accelerator.device, non_blocking=True)
-            target_clean = batch["target"].to(accelerator.device, non_blocking=True)
-            valid_mask = batch["valid_mask"].to(accelerator.device, non_blocking=True)
+            if tx_blind_packed:
+                dense = {
+                    key: value.to(accelerator.device, non_blocking=True) if torch.is_tensor(value) else value
+                    for key, value in batch.items()
+                }
+                sparse = sparse_sampling(dense)
+                building = sparse["building"][:, 0]
+                vehicle = sparse["vehicle"][:, 0]
+                observed = sparse["observed_rss"][:, 0]
+                observed_mask = sparse["sampling_mask"][:, 0]
+                target_clean = sparse["target"][:, 0]
+                valid_mask = sparse["valid_mask"][:, 0]
+                conditions = torch.cat(
+                    (building, torch.zeros_like(building), vehicle, observed, observed_mask), dim=1
+                )
+                batch_rates = sparse["sampling_rate"][:, 0]
+            else:
+                conditions = batch["inputs"].to(accelerator.device, non_blocking=True)
+                target_clean = batch["target"].to(accelerator.device, non_blocking=True)
+                valid_mask = batch["valid_mask"].to(accelerator.device, non_blocking=True)
+                batch_rates = batch["sample_rate"].float()
             # Keep the sparse-observation domain unchanged: samples are drawn
             # only in free space.  The full-image ablation retains obstacles in
             # diffusion/reconstruction and uses them in the physics loss;
@@ -369,12 +433,15 @@ def main() -> None:
                         # plus zero-field soft boundary) and extend it to
                         # dynamic vehicles, whose labels are deterministically
                         # zero in this dataset.
-                        loss_pinn = cal_pinn(
-                            cal[:, 0, :, :],
-                            obstacle_mask,
-                            tx_heatmap,
-                            k=args.pinn_k,
-                        ).mean()
+                        loss_pinn = (
+                            cal_pinn_without_source(
+                                cal[:, 0, :, :], obstacle_mask, k=args.pinn_k
+                            ).mean()
+                            if tx_blind_packed
+                            else cal_pinn(
+                                cal[:, 0, :, :], obstacle_mask, tx_heatmap, k=args.pinn_k
+                            ).mean()
+                        )
                     else:
                         loss_diff = masked_mean((pred_noise - noise).pow(2), valid_mask).mean()
                         loss_cal = masked_mean((cal - target_clean).pow(2), valid_mask).mean()
@@ -395,7 +462,7 @@ def main() -> None:
             epoch_sums += detached
             epoch_batches += 1
             if accelerator.is_main_process and accelerator.sync_gradients and global_step % args.log_interval == 0:
-                rates = batch["sample_rate"].float()
+                rates = batch_rates.float()
                 print(
                     f"epoch={epoch + 1}/{args.epochs} step={global_step} "
                     f"loss={loss.item():.5f} diff={loss_diff.item():.5f} cal={loss_cal.item():.5f} "
