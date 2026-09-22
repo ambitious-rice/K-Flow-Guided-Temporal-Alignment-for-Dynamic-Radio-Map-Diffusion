@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
-from typing import Any, TypeVar, get_type_hints
+from typing import Any, Dict, List, Type, TypeVar, get_type_hints
 
 import yaml
 
@@ -25,15 +25,15 @@ class DataConfig:
 class SamplingConfig:
     seed: int = 20260717
     homogeneous_probability: float = 1.0
-    base_rates: list[float] = field(default_factory=lambda: list(range(1, 11)))
-    base_probabilities: list[float] = field(default_factory=lambda: [0.1] * 10)
-    deltas: list[float] = field(default_factory=lambda: [-2, -1, 0, 1, 2])
-    delta_probabilities: list[float] = field(default_factory=lambda: [0.1, 0.2, 0.4, 0.2, 0.1])
+    base_rates: List[float] = field(default_factory=lambda: list(range(1, 11)))
+    base_probabilities: List[float] = field(default_factory=lambda: [0.1] * 10)
+    deltas: List[float] = field(default_factory=lambda: [-2, -1, 0, 1, 2])
+    delta_probabilities: List[float] = field(default_factory=lambda: [0.1, 0.2, 0.4, 0.2, 0.1])
     extreme_probability_given_heterogeneous: float = 0.0
-    extreme_frame_counts: list[int] = field(default_factory=lambda: [1, 2])
-    extreme_frame_count_probabilities: list[float] = field(default_factory=lambda: [0.8, 0.2])
-    extreme_rates: list[float] = field(default_factory=lambda: [0.1, 0.2, 0.5])
-    extreme_rate_probabilities: list[float] = field(default_factory=lambda: [0.2, 0.3, 0.5])
+    extreme_frame_counts: List[int] = field(default_factory=lambda: [1, 2])
+    extreme_frame_count_probabilities: List[float] = field(default_factory=lambda: [0.8, 0.2])
+    extreme_rates: List[float] = field(default_factory=lambda: [0.1, 0.2, 0.5])
+    extreme_rate_probabilities: List[float] = field(default_factory=lambda: [0.2, 0.3, 0.5])
 
 
 @dataclass
@@ -52,14 +52,14 @@ class MeasurementNoiseConfig:
 @dataclass
 class ModelConfig:
     model_channels: int = 96
-    channel_multipliers: list[int] = field(default_factory=lambda: [1, 1, 2, 3, 4])
+    channel_multipliers: List[int] = field(default_factory=lambda: [1, 1, 2, 3, 4])
     residual_blocks_per_level: int = 2
-    attention_levels: list[int] = field(default_factory=lambda: [3])
+    attention_levels: List[int] = field(default_factory=lambda: [3])
     attention_heads: int = 4
     use_scale_shift_norm: bool = True
     resblock_updown: bool = False
     hwm_base_features: int = 48
-    hwm_channel_multipliers: list[int] = field(default_factory=lambda: [1, 2, 4, 8])
+    hwm_channel_multipliers: List[int] = field(default_factory=lambda: [1, 2, 4, 8])
     hwm_blocks_per_level: int = 2
     variance_embedding_dim: int = 512
     variance_mlp_width: int = 512
@@ -92,7 +92,7 @@ class TrainConfig:
     per_gpu_batch_size: int = 4
     gradient_accumulation_steps: int = 8
     learning_rate: float = 1.0e-4
-    betas: list[float] = field(default_factory=lambda: [0.9, 0.95])
+    betas: List[float] = field(default_factory=lambda: [0.9, 0.95])
     epsilon: float = 1.0e-8
     weight_decay: float = 1.0e-2
     gradient_clip_norm: float = 1.0
@@ -107,16 +107,16 @@ class TrainConfig:
 @dataclass
 class ValidationConfig:
     subset_manifest: str = "configs/manifests/noise_temporal_rmdm_clean16_val.json"
-    included_scenes: list[str] = field(default_factory=lambda: [
+    included_scenes: List[str] = field(default_factory=lambda: [
         "town02_opt_junction_0298", "town10_junction_0532"
     ])
-    excluded_scenes: list[str] = field(default_factory=lambda: [
+    excluded_scenes: List[str] = field(default_factory=lambda: [
         "town01_opt_junction_0087", "town05_opt_junction_0053",
         "town05_opt_junction_0838", "town05_opt_junction_1427",
     ])
-    rates: list[float] = field(default_factory=lambda: [1.0, 3.0])
-    noise_standard_deviations: list[float] = field(default_factory=lambda: [0.0, 0.03, 0.05, 0.09])
-    frame_starts: list[int] = field(default_factory=lambda: [0, 50])
+    rates: List[float] = field(default_factory=lambda: [1.0, 3.0])
+    noise_standard_deviations: List[float] = field(default_factory=lambda: [0.0, 0.03, 0.05, 0.09])
+    frame_starts: List[int] = field(default_factory=lambda: [0, 50])
     batch_size: int = 4
     ddim_steps: int = 20
     every_steps: int = 5_000
@@ -125,18 +125,18 @@ class ValidationConfig:
 @dataclass
 class FinalTestConfig:
     subset_manifest: str = "configs/manifests/noise_temporal_rmdm_clean16_test.json"
-    included_scenes: list[str] = field(default_factory=lambda: [
+    included_scenes: List[str] = field(default_factory=lambda: [
         "town04_opt_junction_0053", "town05_opt_junction_0396"
     ])
-    excluded_scenes: list[str] = field(default_factory=lambda: [
+    excluded_scenes: List[str] = field(default_factory=lambda: [
         "town01_opt_junction_0087", "town05_opt_junction_0053",
         "town05_opt_junction_0838", "town05_opt_junction_1427",
     ])
-    rates: list[float] = field(default_factory=lambda: [1.0, 2.0, 3.0])
-    noise_standard_deviations: list[float] = field(default_factory=lambda: [
+    rates: List[float] = field(default_factory=lambda: [1.0, 2.0, 3.0])
+    noise_standard_deviations: List[float] = field(default_factory=lambda: [
         0.0, 0.01, 0.03, 0.05, 0.07, 0.09
     ])
-    frame_starts: list[int] = field(default_factory=lambda: [0, 25, 50, 75])
+    frame_starts: List[int] = field(default_factory=lambda: [0, 25, 50, 75])
     batch_size: int = 4
     ddim_steps: int = 20
 
@@ -202,27 +202,27 @@ class ExperimentConfig:
         if self.validation.ddim_steps <= 0 or self.final_test.ddim_steps <= 0:
             raise ValueError("evaluation DDIM steps must be positive")
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
 
 T = TypeVar("T")
 
 
-def _from_mapping(cls: type[T], values: dict[str, Any]) -> T:
+def _from_mapping(cls: Type[T], values: Dict[str, Any]) -> T:
     known = {item.name: item for item in fields(cls)}
     unknown = set(values) - set(known)
     if unknown:
         raise KeyError(f"Unknown {cls.__name__} keys: {sorted(unknown)}")
     hints = get_type_hints(cls)
-    kwargs: dict[str, Any] = {}
+    kwargs: Dict[str, Any] = {}
     for name, value in values.items():
         kind = hints.get(name, known[name].type)
         kwargs[name] = _from_mapping(kind, value) if is_dataclass(kind) and isinstance(value, dict) else value
     return cls(**kwargs)
 
 
-def _distribution(name: str, values: list[Any], probabilities: list[float]) -> None:
+def _distribution(name: str, values: List[Any], probabilities: List[float]) -> None:
     if not values or len(values) != len(probabilities):
         raise ValueError(f"{name} values/probabilities must have equal non-zero lengths")
     if any(value < 0 for value in probabilities) or abs(sum(probabilities) - 1.0) > 1e-6:
