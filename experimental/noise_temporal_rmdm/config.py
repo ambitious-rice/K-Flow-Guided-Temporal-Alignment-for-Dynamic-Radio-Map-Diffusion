@@ -64,7 +64,6 @@ class ModelConfig:
     hwm_blocks_per_level: int = 2
     variance_embedding_dim: int = 512
     variance_mlp_width: int = 512
-    known_measurement_variance: bool = True
     dropout: float = 0.0
     gradient_checkpointing: bool = False
     temporal_enabled: bool = False

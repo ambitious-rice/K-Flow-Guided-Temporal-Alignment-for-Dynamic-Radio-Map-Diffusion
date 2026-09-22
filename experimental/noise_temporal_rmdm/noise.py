@@ -117,20 +117,3 @@ def add_fixed_measurement_noise(
     result["measurement_standard_deviation"] = sigma
     result["measurement_variance"] = sigma.square()
     return result
-
-
-def apply_variance_conditioning(
-    sparse_batch: dict[str, Any], *, enabled: bool
-) -> dict[str, Any]:
-    """Optionally hide the known measurement variance from the model condition.
-
-    Observation perturbation and its recorded standard deviation remain intact.
-    Disabling the condition therefore implements a capacity-matched, noise-blind
-    ablation rather than changing the noisy input or the reported protocol.
-    """
-
-    if enabled:
-        return sparse_batch
-    result = dict(sparse_batch)
-    result["measurement_variance"] = torch.zeros_like(sparse_batch["measurement_variance"])
-    return result
