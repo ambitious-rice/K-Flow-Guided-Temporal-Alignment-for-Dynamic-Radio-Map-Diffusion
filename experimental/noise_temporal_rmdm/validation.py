@@ -138,6 +138,10 @@ def run_validation(
                 mae_sum += float(mae.sum())
                 psnr_sum += float(psnr.sum())
                 count += int(mse.numel())
+                if batch_index == 0 or (batch_index + 1) % 20 == 0:
+                    print(json.dumps({"sampling_rate": float(rate), "measurement_sigma": float(sigma),
+                                      "batches_completed": batch_index + 1, "samples_completed": count,
+                                      "elapsed_seconds": time.monotonic() - started}), flush=True)
             if count == 0:
                 raise RuntimeError("validation processed no samples")
             results.append({
