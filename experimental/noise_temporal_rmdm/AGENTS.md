@@ -9,8 +9,9 @@ path allowlists, or duplicated defensive machinery to training code.
 - T16 jointly trains the copied T1 model and the declared temporal refiners;
   do not freeze the spatial/HWM weights by default. Temporal residual outputs
   stay zero initialized so inflation is exactly framewise T1 before training.
-- Do not launch formal T16 training until the user approves the implementation
-  and training plan in a clean follow-up conversation.
+- The user approved formal T16 training on 2026-09-22, specifically on two
+  genuinely idle local GPUs. Do not use a GPU that still has another user's
+  compute process merely because its instantaneous utilization is zero.
 - Tx position is unknown once sparse RSS samples are available. Do not load or
   pass Tx heatmaps, coordinates, identifiers as learned features, or indirect
   Tx-position encodings to either model branch. `tx_id` may remain only as a

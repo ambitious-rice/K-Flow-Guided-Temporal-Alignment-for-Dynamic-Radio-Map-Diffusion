@@ -163,6 +163,11 @@ The reviewed remote configuration is `t16.yaml`. It points to the persistent
 17 GB deduplicated mmap cache and selected T1 checkpoint on `Nice2`. The code is
 ready but formal training must not be launched until user approval.
 
+For the local two-GPU launch, `t16_local.yaml` uses the tmpfs v2 cache and the
+local selected T1 checkpoint. The 96 GB cards use five clips per GPU with
+accumulation 3, preserving the same global 30-clip batch and 21,600-step sample
+exposure as the remote configuration.
+
 Proposed two-GPU launch after approval:
 
 ```bash
