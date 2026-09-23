@@ -42,15 +42,15 @@ W1 starts from scratch (old DiT weights have seen current val scenes).
 | | W1 | W16 |
 |---|---|---|
 | Optimizer steps | 40,000 | 40,000 |
-| Global batch | 512 frames | 32 clips / 512 frames |
-| Four-GPU microbatch / accumulation | 128 / 1 | 8 / 1 |
+| Global batch | 256 frames | 32 clips / 512 frames |
+| Four-GPU microbatch / accumulation | 64 / 1 | 8 / 1 |
 | LR / final LR | 2e-4 / 2e-5 | 5e-5 / 5e-6 |
 | Warmup | 2,000 | 1,000 |
 
 AdamW (.9,.95), eps=1e-8, decay=.01, clip norm=1, BF16, EMA=.999;
 sampling rates 1..10 uniformly. Gradient checkpointing is disabled after four-GPU throughput measurements.
-Both stages now present 20.48M frames at the 40k-step ceiling. Learning rates
-are unchanged; both W1 targets share the larger global batch.
+At the 40k-step ceiling, W1 presents 10.24M frames and W16 presents 20.48M.
+Learning rates are unchanged; both W1 targets share global batch256.
 W16 initializes from its matching validation-selected W1 state, including
 noise conditioning. Inflation preserves weight scales but is not promised
 to be functionally identical to independent W1 frames.
@@ -113,8 +113,15 @@ Four-GPU, 40-update real-data measurements without gradient checkpointing:
 |128|512|755.1|51.13|
 |256|1024|OOM|exceeds 95 GiB device capacity|
 
-Selected W1 batch128; active GPU utilization samples averaged about 87%,
+Initially selected W1 batch128; active GPU utilization samples averaged about 87%,
 peaking near 99%. Original throughput was about 360 frames/s. W16 batch8
 also passed 40 updates, used about27 GiB and sampled at95–98% utilization.
 Transient startup/saving periods are excluded from active-utilization figures.
 Raw measurements and config overrides are under runs/noise_hvdit/checks.
+
+The user subsequently selected W1 batch64/GPU (global256): batch128 only
+improved throughput by 6.2%, while reducing updates per unit time. The batch128
+run is archived at runs/noise_hvdit/w1_x0_batch128. Both W1 targets restart from
+the original seed; LR, warmup, 40k limit, 4k validation and patience3 are unchanged.
+W16 remains at8 clips/GPU. Better validation quality from batch64 is a hypothesis,
+not an established result.
