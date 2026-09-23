@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from experimental.noise_temporal_rmdm.checkpoint import load
+from experimental.noise_temporal_rmdm.checkpoint import _load_payload, load
 from experimental.noise_temporal_rmdm.config import load_config
 from experimental.noise_temporal_rmdm.model import build_model
 from experimental.noise_temporal_rmdm.validation import run_validation
@@ -28,6 +28,8 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--rates", nargs="+", type=float, default=[1.0, 3.0])
     parser.add_argument("--sigmas", nargs="+", type=float, default=[0.0, 0.09])
+    parser.add_argument("--restore-t1", default="")
+    parser.add_argument("--restore-components", nargs="+", choices=["hwm", "variance_embedding", "denoiser"], default=[])
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -39,6 +41,13 @@ def main() -> None:
     model = build_model(config)
     phase = config.runtime.phase
     payload = load(args.checkpoint, model, expected_phase=phase)
+    if args.restore_t1:
+        source = _load_payload(args.restore_t1)["model"]
+        target = model.state_dict()
+        for key in target:
+            if key.split(".", 1)[0] in args.restore_components:
+                target[key].copy_(source[key])
+        model.load_state_dict(target)
     originals = dict(model.temporal_hook.stages) if phase == "t16" else {}
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)

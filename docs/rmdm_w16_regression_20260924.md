@@ -30,6 +30,14 @@ This points to an unstable temporal residual on epsilon that compounds over
 DDIM steps. At the selected step 16200, the same stage partly compensates for
 spatial-weight drift, so its effect changes during training.
 
+On the fixed four-condition subset, swapping the T1 HWM and variance embedding
+into the selected T16 checkpoint (with temporal stages disabled) gave MSE
+0.002739; swapping only the T1 diffusion denoiser gave 0.004169. The unmodified
+T16 spatial weights gave 0.002050 on that subset. Both isolated swaps worsen
+the result, showing that HWM and denoiser co-adapted during joint training;
+neither can be repaired in isolation by copying T1 weights. Reinitializing
+from the complete T1 checkpoint and freezing it is the controlled route.
+
 ## Architectural comparison with historical direct adapters
 
 `archive/old_python/dual_decoder_adapter_student.py` inserted zero-initialized
@@ -56,9 +64,11 @@ freezes all spatial/HWM parameters. Only 7.38M zero-initialized temporal
 parameters train on GPUs 3 and 4 at 2e-5, with 30 clips per update. GPUs 0 and
 2 continue the main HVDiT W1-epsilon pipeline with its global batch of 256.
 Checkpoint 200 on the fixed four-condition subset gives MSE 0.001346 versus
-T1's 0.001344; disabling the condition stage gives 0.001341. Later checkpoint
-validation will determine whether temporal learning adds a real gain or merely
-preserves T1. The next candidate is a calibration/decoder feature adapter with
+T1's 0.001344; checkpoint 600 gives 0.001335 (0.6% lower). Disabling the
+condition stage at step 600 gives 0.001339, disabling the epsilon stage gives
+0.001335, and keeping only calibration gives 0.001336. Later full validation
+will determine whether temporal learning adds a real gain or merely preserves
+T1. The next candidate is a calibration/decoder feature adapter with
 the base frozen, followed by base learning rate near 1e-6 only if paired
 validation improves.
 
