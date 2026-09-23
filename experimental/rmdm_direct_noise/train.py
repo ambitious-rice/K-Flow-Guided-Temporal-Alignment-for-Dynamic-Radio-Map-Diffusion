@@ -110,8 +110,6 @@ def main() -> None:
             if accelerator.is_main_process and (step == 1 or step % 100 == 0):
                 print(json.dumps({"step": step, "loss": float(loss),
                                   "sigma_mean": float(sparse["measurement_standard_deviation"].mean())}), flush=True)
-            if args.smoke and step >= 2:
-                break
             if step % args.val_every == 0 or step == args.max_steps:
                 accelerator.wait_for_everyone()
                 if accelerator.is_main_process:
