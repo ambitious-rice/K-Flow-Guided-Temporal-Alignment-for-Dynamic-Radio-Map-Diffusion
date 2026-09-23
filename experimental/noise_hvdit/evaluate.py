@@ -13,6 +13,7 @@ from rmdm.diffusion import DDIMSampler
 from rmdm_hvdit_v4_joint.training.engine import write_json_atomic
 from .config import load_config
 from .model import NoiseHVDiT
+from .sampling import sample
 
 
 def to_device(batch, device):
@@ -89,7 +90,7 @@ def evaluate(model, config, *, fast=False, ddim_steps=20, split="val", rank=0, w
                     inputs, noise = as_single_frames(sparse), initial.flatten(0, 1).unsqueeze(1)
                 precision = torch.autocast("cuda", dtype=torch.bfloat16) if device.type == "cuda" else nullcontext()
                 with precision:
-                    prediction = sampler.sample(model, inputs, initial_noise=noise, steps=ddim_steps)
+                    prediction = sample(sampler, model, inputs, noise, ddim_steps)
                 prediction = prediction.reshape_as(dense["target"]).float()
                 error = prediction-dense["target"]
                 observed = sparse["sampling_mask"]

@@ -9,6 +9,38 @@ from .config import Config
 from .model import NoiseHVDiT, initialize_w16
 from .step import training_step
 from .evaluate import as_single_frames, frame_noise
+from .step import clean_observation_loss
+from .sampling import project_clean_observations
+
+
+def test_clean_observation_loss_only_uses_noiseless_sampled_pixels():
+    prediction = torch.tensor([1., 3.]).reshape(2, 1, 1, 1, 1)
+    target = torch.zeros_like(prediction)
+    sparse = dict(sampling_mask=torch.ones_like(prediction), measurement_variance=torch.tensor([0., .01]))
+    torch.testing.assert_close(clean_observation_loss(prediction, target, sparse), torch.tensor(1.))
+    sparse["measurement_variance"][:] = .01
+    torch.testing.assert_close(clean_observation_loss(prediction, target, sparse), torch.tensor(0.))
+
+
+def test_clean_observation_projection_preserves_noisy_and_unseen_pixels():
+    output = torch.zeros(2, 1, 1, 1, 2)
+    mask = torch.tensor([1., 0.]).reshape(1, 1, 1, 1, 2).expand_as(output)
+    sparse = dict(sampling_mask=mask, observed_rss=torch.ones_like(output),
+                  measurement_variance=torch.tensor([0., .01]))
+    torch.testing.assert_close(project_clean_observations(output, sparse)[0, 0, 0, 0], torch.tensor([1., 0.]))
+    torch.testing.assert_close(project_clean_observations(output, sparse)[1], output[1])
+
+
+def test_training_step_applies_clean_observation_penalty():
+    c = small_config()
+    c.measurement_noise.clean_probability = 1.0
+    c.measurement_noise.nominal_probability = 0.0
+    c.measurement_noise.strong_probability = 0.0
+    class Fixed(torch.nn.Module):
+        def forward(self, x, t, batch):
+            return torch.zeros_like(x), torch.zeros_like(x)
+    _, metrics = training_step(Fixed(), dense_batch(), SamplingPolicy(c.sampling), DiffusionProcess(c.diffusion), c, 0)
+    assert metrics["clean_observation"] > 0
 
 
 def small_config(frames=1):

@@ -28,6 +28,7 @@ class Loss:
     equation: float = 1.0
     obstacle: float = 1.0
     source: float = 1.0
+    clean_observation: float = 1.0
     pinn_k: float = 0.2
 
 

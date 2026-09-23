@@ -100,6 +100,19 @@ Keep outputs under `runs/noise_hvdit`; important status is also recorded in
 `.agents/runs/noise_hvdit_source.yaml`. Source labels are a separate 141 MiB
 cache; the existing Tx-free image cache is reused unchanged.
 
+## Clean-observation correction (2026-09-23)
+
+The first W1-x0 run showed an observed-point MSE around 0.00060 even when
+measurement sigma was zero. Full-image denoising loss diluted supervision at
+the sparse observations. The revised recipe adds a weight-1 denoiser loss
+averaged over observed pixels of sigma-zero examples only. It uses each
+prediction target's native space: clean x0 for x0, diffusion noise for epsilon.
+The final DDIM output copies exactly known clean observations into those
+pixels; noisy observations are untouched. This copy does not change the
+unobserved-area selection metric. The original W1-x0 checkpoints and
+validation reports are archived; both prediction targets restart from the
+same seed with this revised recipe.
+
 ## Batch tuning (2026-09-23)
 
 User requested higher VRAM use and utilization. The initial 160-step W1 run
