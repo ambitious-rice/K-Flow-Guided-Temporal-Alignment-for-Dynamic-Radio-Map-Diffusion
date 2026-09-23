@@ -33,7 +33,8 @@ class Loss:
 
 @dataclass
 class Evaluation:
-    every_steps: int = 1000
+    every_steps: int = 4000
+    patience: int = 3
     batch_size: int = 8
     rates: list[float] = field(default_factory=lambda: [1, 2, 3])
     sigmas: list[float] = field(default_factory=lambda: [0, 0.01, 0.03, 0.05, 0.07, 0.09])

@@ -1,6 +1,5 @@
 """One trainer for both prediction targets and both window lengths."""
 import argparse
-from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime
 import os
@@ -53,6 +52,13 @@ def restore_rng(state):
     random.setstate(state["python"])
 
 
+def validation_progress(score, best, bad_count, patience):
+    if score < best:
+        return score, 0, False
+    bad_count += 1
+    return best, bad_count, bad_count >= patience
+
+
 def run(config, *, resume="", initialize="", stop_after=0, skip_validation=False):
     accelerator = make_accelerator(mixed_precision=config.train.mixed_precision,
         gradient_accumulation_steps=config.train.gradient_accumulation_steps, data_seed=config.train.seed)
@@ -75,6 +81,8 @@ def run(config, *, resume="", initialize="", stop_after=0, skip_validation=False
         num_workers=config.data.workers, pin_memory=True, drop_last=True,
         persistent_workers=config.data.workers > 0 and config.data.window_size == 1)
     step = epoch = offset = 0
+    best_score, bad_validations = float("inf"), 0
+    early_stop = False
     payload = None
     if resume:
         payload = torch.load(resume, map_location="cpu", weights_only=False)
@@ -82,6 +90,8 @@ def run(config, *, resume="", initialize="", stop_after=0, skip_validation=False
         optimizer.load_state_dict(payload["optimizer"])
         scheduler.load_state_dict(payload["scheduler"])
         step, epoch, offset = payload["step"], payload["epoch"], payload["offset"]
+        best_score = payload.get("best_score", float("inf"))
+        bad_validations = payload.get("bad_validations", 0)
     model, optimizer, loader = accelerator.prepare(model, optimizer, loader)
     unwrapped = accelerator.unwrap_model(model)
     ema = deepcopy(unwrapped).eval().requires_grad_(False)
@@ -106,7 +116,7 @@ def run(config, *, resume="", initialize="", stop_after=0, skip_validation=False
     sums = None
     started = time.monotonic()
     stop = min(stop_after or config.train.max_steps, config.train.max_steps)
-    while step < stop:
+    while step < stop and not early_stop:
         dataset.set_epoch(epoch)
         sampling.set_epoch(epoch)
         loader.set_epoch(epoch)
@@ -155,17 +165,30 @@ def run(config, *, resume="", initialize="", stop_after=0, skip_validation=False
                     if accelerator.num_processes > 1:
                         for buffer in candidate.buffers():
                             torch.distributed.broadcast(buffer, 0)
+                scores = []
                 for name, candidate in (("model", unwrapped), ("ema", ema)):
-                    rows = evaluate(candidate, config, fast=True, rank=accelerator.process_index,
+                    rows = evaluate(candidate, config, rank=accelerator.process_index,
                                     world_size=accelerator.num_processes)
                     rows = gather_object(rows)
+                    summary = summarize(rows)
+                    scores.append(summary["all"]["unobserved_mse"])
                     if accelerator.is_main_process:
-                        report = dict(step=step, weights=name, summary=summarize(rows), rows=rows)
+                        report = dict(step=step, weights=name, summary=summary, rows=rows)
                         write_json_atomic(output/"validation"/f"step_{step:06d}_{name}.json", report)
                         print({"validation": step, "weights": name, **report["summary"]}, flush=True)
                 model.train()
                 restore_rng(training_rng)
-            if checkpoint_due:
+                score = min(scores)
+                best_score, bad_validations, early_stop = validation_progress(
+                    score, best_score, bad_validations, config.evaluation.patience)
+                if bad_validations == 0:
+                    if accelerator.is_main_process:
+                        atomic_save(dict(model=unwrapped.state_dict(), ema=ema.state_dict(), step=step,
+                                         config=config.to_dict(), source=source), output/"checkpoints"/"best.pth")
+                if accelerator.is_main_process:
+                    append_jsonl(output/"progress.jsonl", dict(step=step, score=score, best_score=best_score,
+                                 bad_validations=bad_validations, early_stop=early_stop))
+            if checkpoint_due or validation_due:
                 states = gather_object([rng_state()])
                 if accelerator.is_main_process:
                     weights = dict(model=unwrapped.state_dict(), ema=ema.state_dict(), step=step,
@@ -173,15 +196,19 @@ def run(config, *, resume="", initialize="", stop_after=0, skip_validation=False
                     if validation_due:
                         atomic_save(weights, output/"checkpoints"/f"step_{step:06d}.pth")
                     atomic_save({**weights, "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
-                                 "epoch": epoch, "offset": batch_index+1, "rng": states}, output/"checkpoints"/"last.pth")
+                                 "epoch": epoch, "offset": batch_index+1, "rng": states,
+                                 "best_score": best_score, "bad_validations": bad_validations}, output/"checkpoints"/"last.pth")
                 accelerator.wait_for_everyone()
-            if step >= stop:
+            if step >= stop or early_stop:
                 break
         epoch += 1
         offset = 0
     if accelerator.is_main_process:
         write_json_atomic(output/"status.json", {**status, "step": step,
-            "state": "complete" if step == config.train.max_steps else "paused",
+            "state": "complete" if step == config.train.max_steps or early_stop else "paused",
+            "reason": "validation_patience" if early_stop else "max_steps" if step == config.train.max_steps else "stop_after",
+            "best_score": best_score if best_score < float("inf") else None,
+            "bad_validations": bad_validations,
             "ended_at": datetime.now().astimezone().isoformat()})
     accelerator.wait_for_everyone()
     accelerator.end_training()

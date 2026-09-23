@@ -41,7 +41,7 @@ W1 starts from scratch (old DiT weights have seen current val scenes).
 
 | | W1 | W16 |
 |---|---|---|
-| Optimizer steps | 40,000 | 20,000 |
+| Optimizer steps | 40,000 | 40,000 |
 | Global batch | 256 frames | 32 clips / 512 frames |
 | Four-GPU microbatch / accumulation | 16 / 4 | 2 / 4 |
 | LR / final LR | 2e-4 / 2e-5 | 5e-5 / 5e-6 |
@@ -55,15 +55,19 @@ to be functionally identical to independent W1 frames.
 
 ## Evaluation and automatic selection
 
-Every 1,000 steps, all four GPUs run fixed DDIM20 validation of raw and EMA
-weights on two videos per validation scene, start=0, all 16 frames, rates
+Every 4,000 steps, all four GPUs run fixed DDIM20 validation of raw and EMA
+weights on all tracked validation videos, starts=0,48, all 32 frames, rates
 1/2/3 and sigma=0/.01/.03/.05/.07/.09. This is **validation**, never test.
-W1 predicts those same 16 physical frames independently. Both models use
+W1 predicts every physical frame in those same clips independently. Both models use
 the same masks, observations and per-frame initial diffusion noise.
 PSNR is averaged per frame for both models. Metrics include full image,
 unobserved free space, observed points and error in frame-to-frame changes.
 
-After training, the top three (step, raw/EMA) candidates by fast-validation
+Early stop after three consecutive validations without a lower mean unobserved MSE
+(best of raw/EMA). Save best.pth as well as resumable last.pth; the patience
+state is restored on resume. Both W1 and W16 have a 40,000-step ceiling.
+
+After training, the top three (step, raw/EMA) candidates by DDIM20-validation
 mean unobserved MSE are evaluated with DDIM50 on all tracked val videos and
 starts 0,48 (32 physical frames/video). Select lowest mean unobserved MSE
 among candidates within 5% of the best candidate's clean unobserved MSE.

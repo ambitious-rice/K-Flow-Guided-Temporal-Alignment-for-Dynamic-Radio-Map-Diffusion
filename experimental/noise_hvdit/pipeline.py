@@ -47,7 +47,7 @@ def select(config_path):
     if selected.exists():
         return json.loads(selected.read_text())
     candidates = [json.loads(p.read_text()) for p in (output/"validation").glob("step_*.json")]
-    # Fast validation shortlists three (checkpoint, weight-type) candidates;
+    # Periodic DDIM20 validation shortlists three (checkpoint, weight-type) candidates;
     # the full paired DDIM50 protocol makes the final selection.
     candidates.sort(key=lambda c: c["summary"]["all"]["unobserved_mse"])
     reports = []

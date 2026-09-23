@@ -1,5 +1,4 @@
 """Scientific contracts that would invalidate the comparison if broken."""
-from copy import deepcopy
 
 import torch
 
@@ -108,3 +107,29 @@ def test_evaluation_physical_frames_and_initial_noise_pair():
     for t in (0, 7, 15):
         frame = frame_noise(dense["target"][:, :1], dense["video_id"], [t], 42)
         torch.testing.assert_close(clip[:, t:t+1], frame, rtol=0, atol=0)
+
+
+def test_early_stopping_counts_consecutive_validations_and_resets():
+    from .train import validation_progress
+    best, bad, stopped = float("inf"), 0, False
+    for value in (1.0, .9, .91, .92):
+        best, bad, stopped = validation_progress(value, best, bad, 3)
+    assert (best, bad, stopped) == (.9, 2, False)
+    # These two scalars are the exact state persisted by a checkpoint.
+    assert validation_progress(.93, best, bad, 3) == (.9, 3, True)
+    best, bad, stopped = validation_progress(.8, best, bad, 3)
+    assert (best, bad, stopped) == (.8, 0, False)
+    assert validation_progress(.8, best, bad, 3) == (.8, 1, False)
+
+
+def test_w1_target_decision_requires_both_margin_and_no_regression():
+    from .pipeline import compare
+    def report(error, clean=None):
+        return dict(summary={group: {"unobserved_mse": clean if group == "clean" and clean else error}
+                             for group in ("all", "clean", "high_noise")},
+                    rows=[dict(video_id=f"s{scene}/v{video}", unobserved_mse=error)
+                          for scene in range(2) for video in range(4)])
+    assert compare(report(.8), report(1.0))["w16_variants"] == ["x0"]
+    assert compare(report(1.0), report(.8))["w16_variants"] == ["epsilon"]
+    assert not compare(report(.98), report(1.0))["clear_advantage"]
+    assert not compare(report(.8, clean=1.1), report(1.0))["clear_advantage"]

@@ -151,7 +151,7 @@ class PackedFrameReader:
         building = self.buildings[record.scene_index].astype(np.float32) / 255.0
         ids = self.frame_ids[record.index, start:stop]
         return {
-            "building": np.broadcast_to(building, (length, *building.shape)),
+            "building": np.broadcast_to(building, (length, *building.shape)).copy(),
             "vehicle": self.vehicles[record.episode_index, start:stop].astype(np.float32),
             "target": self.targets[record.index, start:stop].astype(np.float32) / 255.0,
             "frame_names": [f"{record.video_id}/frame_{int(frame):06d}.png" for frame in ids],
