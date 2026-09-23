@@ -15,6 +15,7 @@ def main() -> None:
     parser.add_argument("--repository-root", default=".")
     parser.add_argument("--resume-from", default="")
     parser.add_argument("--initialize-from-t1", default="")
+    parser.add_argument("--freeze-spatial", action="store_true")
     args = parser.parse_args()
     config = load_config(args.config)
     run(
@@ -23,6 +24,7 @@ def main() -> None:
         repository_root=Path(args.repository_root),
         resume_from=args.resume_from,
         initialize_from_t1=args.initialize_from_t1,
+        freeze_spatial=args.freeze_spatial,
     )
 
 

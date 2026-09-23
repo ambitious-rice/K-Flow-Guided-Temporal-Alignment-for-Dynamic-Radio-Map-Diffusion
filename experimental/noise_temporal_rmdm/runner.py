@@ -64,6 +64,7 @@ def run(
     repository_root: str | Path,
     resume_from: str = "",
     initialize_from_t1: str = "",
+    freeze_spatial: bool = False,
 ) -> None:
     """Run T1 or T16 training; formal DDIM validation remains a separate job."""
 
@@ -87,6 +88,9 @@ def run(
         if not source_t1:
             raise ValueError("T16 requires --initialize-from-t1 or runtime.initialize_from_t1")
         initialization = initialize_t16_from_t1(source_t1, model)
+    if freeze_spatial:
+        for name, parameter in model.named_parameters():
+            parameter.requires_grad_(name.startswith("temporal_hook."))
     trainable, total = parameter_counts(model)
     if config.model.expected_trainable_parameters_min and not (
         config.model.expected_trainable_parameters_min <= trainable
@@ -186,6 +190,7 @@ def run(
             "excluded_validation_scenes": config.validation.excluded_scenes,
             "source": source,
             "initialization": initialization,
+            "freeze_spatial": freeze_spatial,
         }
         write_json_atomic(output / "status.json", status)
         append_jsonl(output / "history.jsonl", {"event": "start_or_resume", **status})
