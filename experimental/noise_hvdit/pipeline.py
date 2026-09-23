@@ -18,7 +18,8 @@ ROOT = Path("runs/noise_hvdit")
 
 
 def execute(module, *args):
-    command = [sys.executable, "-m", "torch.distributed.run", "--standalone", "--nproc_per_node=4",
+    workers = len(os.environ["CUDA_VISIBLE_DEVICES"].split(","))
+    command = [sys.executable, "-m", "torch.distributed.run", "--standalone", f"--nproc_per_node={workers}",
                "-m", f"experimental.noise_hvdit.{module}", *map(str, args)]
     write_json_atomic(ROOT/"pipeline_status.json", dict(state="running", command=command))
     print("Executing:", " ".join(command), flush=True)

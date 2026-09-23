@@ -7,7 +7,7 @@ train:
   learning_rate: 5.0e-05
   warmup_steps: 1000
   min_learning_rate: 5.0e-06
-  gradient_accumulation_steps: 1
+  gradient_accumulation_steps: 2
 evaluation:
   batch_size: 4
 output: runs/noise_hvdit/w16_x0
