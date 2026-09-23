@@ -65,6 +65,9 @@ def run_validation(
     device: str = "cuda",
     ddim_steps: int | None = None,
     max_batches: int = 0,
+    model: torch.nn.Module | None = None,
+    checkpoint_step: int | None = None,
+    evaluated_model: str | None = None,
 ) -> dict:
     """Evaluate the fixed periodic-val or final-partial-test protocol."""
 
@@ -103,8 +106,14 @@ def run_validation(
         persistent_workers=config.data.workers > 0,
     )
     torch_device = torch.device(device)
-    model = build_model(config).to(torch_device)
-    payload = load(checkpoint_path, model, expected_phase=config.runtime.phase)
+    if model is None:
+        model = build_model(config).to(torch_device)
+        payload = load(checkpoint_path, model, expected_phase=config.runtime.phase)
+        checkpoint_step = int(payload["global_step"])
+    else:
+        if checkpoint_step is None:
+            raise ValueError("checkpoint_step is required for an externally loaded model")
+        model = model.to(torch_device)
     model.eval()
     sampling = SamplingPolicy(config.sampling, split=evaluation_split)
     sampler = DDIMSampler(config.diffusion)
@@ -156,11 +165,12 @@ def run_validation(
     summary = {
         "schema": f"noise_temporal_rmdm_{config.runtime.phase}_evaluation_v1",
         "phase": config.runtime.phase,
+        "evaluated_model": evaluated_model or config.runtime.phase,
         "window_size": config.data.window_size,
         "evaluation_split": evaluation_split,
         "selection_role": "checkpoint_selection" if evaluation_split == "val" else "final_report_only",
         "checkpoint": str(Path(checkpoint_path).expanduser().resolve()),
-        "checkpoint_step": int(payload["global_step"]),
+        "checkpoint_step": int(checkpoint_step),
         "ddim_steps": int(ddim_steps or protocol.ddim_steps),
         "tx_input": False,
         "source_loss": False,

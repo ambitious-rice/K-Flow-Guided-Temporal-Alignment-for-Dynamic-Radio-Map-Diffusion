@@ -22,9 +22,17 @@ class LegacyRMDMT1ProtocolAdapter(nn.Module):
         self.without_tx = bool(without_tx)
 
     def encode_conditions(self, sparse_batch: dict[str, Any]) -> torch.Tensor:
-        names = ("building", "tx", "vehicle", "observed_rss", "sampling_mask")
-        values = [sparse_batch[name] for name in names]
-        reference = values[0]
+        reference = sparse_batch["building"]
+        tx = sparse_batch.get("tx")
+        if tx is None:
+            tx = torch.zeros_like(reference)
+        values = [
+            reference,
+            tx,
+            sparse_batch["vehicle"],
+            sparse_batch["observed_rss"],
+            sparse_batch["sampling_mask"],
+        ]
         if reference.ndim != 5 or reference.shape[1:3] != (1, 1):
             raise ValueError("Legacy RMDM comparison requires [N,1,1,H,W] T1 conditions")
         if any(value.shape != reference.shape for value in values[1:]):
