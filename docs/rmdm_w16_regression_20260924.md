@@ -12,6 +12,8 @@ framewise on the same W16 clips. MSE is averaged equally across eight conditions
 | T16 selected step 16200 | 0.001866 |
 | T16 step 16200, all temporal stages disabled | 0.002058 |
 | T16 step 16200, condition stage disabled | 0.001808 |
+| Frozen-T1 temporal-only step 1000 | 0.000971 |
+| Frozen-T1 temporal-only step 1200 | **0.000970** |
 
 The joint T16 run degraded the spatial weights: removing all temporal modules
 from its selected checkpoint still gives more than twice the T1 error. The
@@ -22,6 +24,25 @@ The regression is strongly rate dependent. At rate 1, T16 and T1 are close;
 at rate 3 and sigma 0, T1 MSE is 0.000419 versus T16 0.002157. At rate 3 and
 sigma 0.09, they are 0.001093 and 0.003063. Disabling every temporal stage
 does not recover rate 3, which implicates changes to the spatial/HWM model.
+The old T16 is actually better than T1 at rate 1 and high sigma, so a useful
+temporal effect is obscured by its collapse at rate 3.
+
+| Rate | Sigma | T1 | Original T16 | Frozen-T1 T16 step 1200 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 0 | 0.000687 | 0.000728 | 0.000686 |
+| 1 | 0.03 | 0.001049 | 0.001021 | 0.001043 |
+| 1 | 0.05 | 0.001306 | 0.001265 | 0.001298 |
+| 1 | 0.09 | 0.001912 | 0.001699 | 0.001888 |
+| 3 | 0 | 0.000419 | 0.002157 | 0.000421 |
+| 3 | 0.03 | 0.000582 | 0.002373 | 0.000580 |
+| 3 | 0.05 | 0.000772 | 0.002622 | 0.000764 |
+| 3 | 0.09 | 0.001093 | 0.003063 | 0.001076 |
+
+As a diagnostic two-checkpoint combination, choosing the original T16
+at rate 1 and T1 at rate 3 gives 0.000947 average MSE (3.1% below T1). This
+is a derived routing score from the same paired rows, not a trained single
+model. It motivates a rate-conditioned temporal residual or separate
+rate-specialized models rather than unconditional joint fine-tuning.
 
 An earlier T16 checkpoint (step 5400) scored 0.009894 on a fixed four-condition,
 10-clip-per-condition subset. Disabling only the predicted-noise temporal stage
@@ -67,8 +88,11 @@ Checkpoint 200 on the fixed four-condition subset gives MSE 0.001346 versus
 T1's 0.001344; checkpoint 600 gives 0.001335 (0.6% lower). Disabling the
 condition stage at step 600 gives 0.001339, disabling the epsilon stage gives
 0.001335, and keeping only calibration gives 0.001336. Later full validation
-will determine whether temporal learning adds a real gain or merely preserves
-T1. The next candidate is a calibration/decoder feature adapter with
+at step 1000 gives 0.000971 across eight conditions versus T1's 0.000978,
+about 0.7% lower. Rate 3 at sigma 0.09 is 0.001077 versus T1's 0.001093 and
+the old T16's 0.003063. Step 1200 gives 0.000970, about 0.8% below T1. The
+severe regression is fixed, but the gain is small.
+The next candidate is a calibration/decoder feature adapter with
 the base frozen, followed by base learning rate near 1e-6 only if paired
 validation improves.
 
