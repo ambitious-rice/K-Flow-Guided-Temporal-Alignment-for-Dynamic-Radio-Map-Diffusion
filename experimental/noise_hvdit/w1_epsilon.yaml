@@ -3,7 +3,7 @@ data:
 diffusion:
   prediction_type: epsilon
 evaluation:
-  batch_size: 1
+  batch_size: 4
 output: runs/noise_hvdit/w1_epsilon
 train:
   per_gpu_batch_size: 64

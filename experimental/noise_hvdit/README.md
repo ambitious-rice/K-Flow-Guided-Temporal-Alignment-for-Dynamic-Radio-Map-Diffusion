@@ -125,3 +125,9 @@ run is archived at runs/noise_hvdit/w1_x0_batch128. Both W1 targets restart from
 the original seed; LR, warmup, 40k limit, 4k validation and patience3 are unchanged.
 W16 remains at8 clips/GPU. Better validation quality from batch64 is a hypothesis,
 not an established result.
+
+Validation uses4 clips/GPU (64 independent frames for W1,4 clips for W16).
+Training batch sizes are unchanged. DDIM20 remains the periodic validation
+protocol and DDIM50 the final selection protocol. Follow-up analysis should
+pair DDIM20/50 on identical checkpoints, weights, frames and initial noise
+separately for x0 and epsilon; compare error and wall time.

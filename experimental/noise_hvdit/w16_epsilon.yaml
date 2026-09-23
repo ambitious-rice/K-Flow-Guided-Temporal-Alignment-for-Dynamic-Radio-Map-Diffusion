@@ -11,7 +11,7 @@ train:
   min_learning_rate: 5.0e-06
   gradient_accumulation_steps: 1
 evaluation:
-  batch_size: 1
+  batch_size: 4
 output: runs/noise_hvdit/w16_epsilon
 model:
   gradient_checkpointing: false

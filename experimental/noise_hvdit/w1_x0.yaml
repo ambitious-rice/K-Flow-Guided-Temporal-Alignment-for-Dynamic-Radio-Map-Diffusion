@@ -1,7 +1,7 @@
 data:
   packed_cache_root: /dev/shm/noise_temporal_clean16_train_v2
 evaluation:
-  batch_size: 1
+  batch_size: 4
 train:
   per_gpu_batch_size: 64
   gradient_accumulation_steps: 1
