@@ -2551,12 +2551,15 @@ class Generic_UNet(RadioNetwork):
             self.apply(self.weightInitializer)
             # self.apply(print_module_training_status)
 
-    def forward(self, x, hs = None):
+    def forward(self, x, hs = None, feature_modulations=None):
         skips = []
         seg_outputs = []
         anch_outputs = []
         for d in range(len(self.conv_blocks_context) - 1):
             x = self.conv_blocks_context[d](x)
+            if feature_modulations is not None:
+                shift, scale = feature_modulations[0][d]
+                x = x * (1 + scale) + shift
             skips.append(x)
             if not self.convolutional_pooling:
                 x = self.td[d](x)
@@ -2572,12 +2575,18 @@ class Generic_UNet(RadioNetwork):
             
 
         x = self.conv_blocks_context[-1](x)
+        if feature_modulations is not None:
+            shift, scale = feature_modulations[0][-1]
+            x = x * (1 + scale) + shift
         emb = self.emb_proj(x)
 
         for u in range(len(self.tu)):
             x = self.tu[u](x)
             x = th.cat((x, skips[-(u + 1)]), dim=1)
             x = self.conv_blocks_localization[u](x)
+            if feature_modulations is not None:
+                shift, scale = feature_modulations[1][u]
+                x = x * (1 + scale) + shift
             if self._deep_supervision:
                 seg_outputs.append(self.final_nonlin(self.seg_outputs[u](x)))
             if self.anchor_out and (not self._deep_supervision):
@@ -2635,7 +2644,6 @@ class Generic_UNet(RadioNetwork):
                 tmp += np.prod(map_size, dtype=np.int64) * num_classes
             # print(p, map_size, num_feat, tmp)
         return tmp
-
 
 
 

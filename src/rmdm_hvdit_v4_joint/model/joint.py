@@ -166,7 +166,7 @@ class JointTokenDenoiser(nn.Module):
             dim=2,
         )
         observation = torch.cat((raw["observed_rss"], raw["sampling_mask"]), dim=2)
-        high = self.condition_stem(dense, observation)
+        high = self.condition_stem(dense, observation, raw.get("condition_observation_modulation"))
         return high, self.condition_merge(high)
 
     def build_inputs(
@@ -197,7 +197,7 @@ class JointTokenDenoiser(nn.Module):
         if missing:
             raise KeyError(f"encoded condition cache misses {missing}")
         dense, observation = self.build_inputs(noisy_target, cache)
-        state = self.input_stem(dense, observation)
+        state = self.input_stem(dense, observation, cache.get("input_observation_modulation"))
         state = apply_detached_hwm_gate(state, cache["hwm_gate"])
         condition_high = cache["condition_high"]
         condition_low = cache["condition_low"]
@@ -205,7 +205,9 @@ class JointTokenDenoiser(nn.Module):
             raise ValueError("high-resolution condition pyramid does not match main tokens")
 
         timestep_condition = self.timestep_mapping(timesteps).to(state.dtype)
+        timestep_condition = timestep_condition + cache.get("measurement_condition", 0)
         local_modulation = self.local_time_modulation(timestep_condition)
+        local_modulation = local_modulation + cache.get("local_measurement_modulation", 0)
         fine_coordinates = grid_coordinates(
             state.shape[1], state.shape[2], state.shape[3], device=state.device
         )
@@ -224,6 +226,7 @@ class JointTokenDenoiser(nn.Module):
             raise ValueError("low-resolution condition pyramid does not match bottleneck tokens")
         coarse_coordinates = merge_coordinates(fine_coordinates, temporal_factor=self.temporal_factor)
         global_modulation = self.global_time_modulation(timestep_condition)
+        global_modulation = global_modulation + cache.get("global_measurement_modulation", 0)
         for block in self.global_bottleneck:
             state = self._run_transformer(
                 block,

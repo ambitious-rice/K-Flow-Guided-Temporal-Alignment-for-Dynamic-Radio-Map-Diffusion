@@ -50,13 +50,15 @@ class T1DoubleStem(nn.Module):
         )
         self.fusion = xavier_linear(nn.Linear(2 * dim, dim, bias=False))
 
-    def forward(self, dense: torch.Tensor, observation: torch.Tensor) -> torch.Tensor:
+    def forward(self, dense: torch.Tensor, observation: torch.Tensor, modulation=None) -> torch.Tensor:
         if dense.ndim != 5 or observation.ndim != 5 or dense.shape[1] != 1 or observation.shape[1] != 1:
             raise ValueError("T1 stems require [B,1,C,H,W]")
         dense_patch = _space_to_depth(dense[:, 0], self.patch_size).permute(0, 2, 3, 1)
         observation_patch = _space_to_depth(observation[:, 0], self.patch_size).permute(0, 2, 3, 1)
         dense_token = self.dense_projection(dense_patch)
         observation_token = self.observation_projection(observation_patch)
+        if modulation is not None:
+            observation_token = modulate(observation_token, *modulation)
         return self.fusion(torch.cat((dense_token, observation_token), dim=-1)).unsqueeze(1)
 
 
@@ -94,11 +96,13 @@ class W16DoubleStem(nn.Module):
         packed = _space_to_depth(paired, self.spatial_patch).permute(0, 2, 3, 1)
         return packed.reshape(batch, token_time, packed.shape[1], packed.shape[2], packed.shape[3])
 
-    def forward(self, dense: torch.Tensor, observation: torch.Tensor) -> torch.Tensor:
+    def forward(self, dense: torch.Tensor, observation: torch.Tensor, modulation=None) -> torch.Tensor:
         if dense.ndim != 5 or observation.ndim != 5 or dense.shape[1] != 16 or observation.shape[1] != 16:
             raise ValueError("W16 stems require [B,16,C,H,W]")
         dense_token = self.dense_projection(self._pack(dense))
         observation_token = self.observation_projection(self._pack(observation))
+        if modulation is not None:
+            observation_token = modulate(observation_token, *modulation)
         return self.fusion(torch.cat((dense_token, observation_token), dim=-1))
 
 
