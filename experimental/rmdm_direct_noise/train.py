@@ -57,7 +57,7 @@ def main() -> None:
         parameter.requires_grad_(True)
         mask = torch.zeros_like(parameter)
         mask[:, index] = 1
-        parameter.register_hook(lambda grad, mask=mask: grad * mask)
+        parameter.register_hook(lambda grad, mask=mask: grad * mask.to(grad.device))
     optimizer = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad),
                                   lr=args.lr, weight_decay=0)
 
