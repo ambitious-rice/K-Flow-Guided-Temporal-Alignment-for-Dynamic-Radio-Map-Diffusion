@@ -20,7 +20,8 @@ def training_step(model, dense, sampling, diffusion, config, epoch):
     prediction, cal = model(batch.noisy_target, batch.timesteps, sparse)
     expected = target if config.diffusion.prediction_type == "sample" else batch.noise
     reconstruction = F.mse_loss(prediction.float(), expected.float())
-    observation = clean_observation_loss(prediction, expected, sparse)
+    observation = (clean_observation_loss(prediction, expected, sparse)
+                   if config.loss.clean_observation else prediction.new_zeros(()))
     calibration = F.mse_loss(cal.float(), target.float())
     obstacle = ((sparse["building"] > 0.5) | (sparse["vehicle"] > 0.5)).float()
     equation, boundary, source = cal_pinn_components(

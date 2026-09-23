@@ -2,6 +2,8 @@ data:
   packed_cache_root: /dev/shm/noise_temporal_clean16_train_v2
 diffusion:
   prediction_type: epsilon
+loss:
+  clean_observation: 0.0
 evaluation:
   batch_size: 4
 output: runs/noise_hvdit/w1_epsilon

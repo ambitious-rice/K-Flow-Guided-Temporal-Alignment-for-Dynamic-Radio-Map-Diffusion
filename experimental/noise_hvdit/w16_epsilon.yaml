@@ -3,6 +3,8 @@ data:
   packed_cache_root: /dev/shm/noise_temporal_clean16_train_v2
 diffusion:
   prediction_type: epsilon
+loss:
+  clean_observation: 0.0
 train:
   max_steps: 40000
   per_gpu_batch_size: 8

@@ -113,6 +113,13 @@ unobserved-area selection metric. The original W1-x0 checkpoints and
 validation reports are archived; both prediction targets restart from the
 same seed with this revised recipe.
 
+The epsilon stages use the original epsilon MSE objective with the existing
+clean calibration, equation, obstacle and source losses; their added
+clean-observation loss weight is zero. The final clean-observation DDIM copy
+remains common to x0 and epsilon, so it cannot affect the unseen-area
+selection metric. This compares two training recipes, not an isolated change
+of prediction parameterization.
+
 ## Batch tuning (2026-09-23)
 
 User requested higher VRAM use and utilization. The initial 160-step W1 run
