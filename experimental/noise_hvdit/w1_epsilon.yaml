@@ -5,3 +5,8 @@ diffusion:
 evaluation:
   batch_size: 1
 output: runs/noise_hvdit/w1_epsilon
+train:
+  per_gpu_batch_size: 128
+  gradient_accumulation_steps: 1
+model:
+  gradient_checkpointing: false

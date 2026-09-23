@@ -3,10 +3,13 @@ data:
   packed_cache_root: /dev/shm/noise_temporal_clean16_train_v2
 train:
   max_steps: 40000
-  per_gpu_batch_size: 2
+  per_gpu_batch_size: 8
   learning_rate: 5.0e-05
   warmup_steps: 1000
   min_learning_rate: 5.0e-06
+  gradient_accumulation_steps: 1
 evaluation:
   batch_size: 1
 output: runs/noise_hvdit/w16_x0
+model:
+  gradient_checkpointing: false

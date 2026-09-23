@@ -42,13 +42,15 @@ W1 starts from scratch (old DiT weights have seen current val scenes).
 | | W1 | W16 |
 |---|---|---|
 | Optimizer steps | 40,000 | 40,000 |
-| Global batch | 256 frames | 32 clips / 512 frames |
-| Four-GPU microbatch / accumulation | 16 / 4 | 2 / 4 |
+| Global batch | 512 frames | 32 clips / 512 frames |
+| Four-GPU microbatch / accumulation | 128 / 1 | 8 / 1 |
 | LR / final LR | 2e-4 / 2e-5 | 5e-5 / 5e-6 |
 | Warmup | 2,000 | 1,000 |
 
 AdamW (.9,.95), eps=1e-8, decay=.01, clip norm=1, BF16, EMA=.999;
-sampling rates 1..10 uniformly. Gradient checkpointing is enabled.
+sampling rates 1..10 uniformly. Gradient checkpointing is disabled after four-GPU throughput measurements.
+Both stages now present 20.48M frames at the 40k-step ceiling. Learning rates
+are unchanged; both W1 targets share the larger global batch.
 W16 initializes from its matching validation-selected W1 state, including
 noise conditioning. Inflation preserves weight scales but is not promised
 to be functionally identical to independent W1 frames.
@@ -97,3 +99,22 @@ RNG and dataset position. Config and Git provenance accompany each stage.
 Keep outputs under `runs/noise_hvdit`; important status is also recorded in
 `.agents/runs/noise_hvdit_source.yaml`. Source labels are a separate 141 MiB
 cache; the existing Tx-free image cache is reused unchanged.
+
+## Batch tuning (2026-09-23)
+
+User requested higher VRAM use and utilization. The initial 160-step W1 run
+(batch16/GPU, accumulation4, checkpointing) was archived before its first
+checkpoint. Formal training restarts from the same seed with the final recipe.
+Four-GPU, 40-update real-data measurements without gradient checkpointing:
+
+| W1 batch/GPU | Global batch | Frames/s | Peak allocated GiB/GPU |
+|---|---|---|---|
+|64|256|710.7|27.05|
+|128|512|755.1|51.13|
+|256|1024|OOM|exceeds 95 GiB device capacity|
+
+Selected W1 batch128; active GPU utilization samples averaged about 87%,
+peaking near 99%. Original throughput was about 360 frames/s. W16 batch8
+also passed 40 updates, used about27 GiB and sampled at95–98% utilization.
+Transient startup/saving periods are excluded from active-utilization figures.
+Raw measurements and config overrides are under runs/noise_hvdit/checks.

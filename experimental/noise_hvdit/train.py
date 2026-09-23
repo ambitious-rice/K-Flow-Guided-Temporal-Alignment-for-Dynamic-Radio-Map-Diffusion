@@ -151,7 +151,8 @@ def run(config, *, resume="", initialize="", stop_after=0, skip_validation=False
             if accelerator.is_main_process and (step <= 2 or step % config.train.log_every_steps == 0):
                 log = {k: float(v) for k, v in zip(metrics, reduced)}
                 log.update(step=step, epoch=epoch, grad_norm=float(grad_norm), lr=scheduler.get_last_lr()[0],
-                           elapsed_seconds=time.monotonic()-started)
+                           elapsed_seconds=time.monotonic()-started,
+                           peak_memory_gib=torch.cuda.max_memory_allocated()/1024**3)
                 append_jsonl(output/"train.jsonl", log)
                 write_json_atomic(output/"status.json", {**status, "step": step, "metrics": log})
                 print(log, flush=True)
