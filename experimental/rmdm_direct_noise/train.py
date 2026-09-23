@@ -43,6 +43,7 @@ def main() -> None:
     config.data.root = args.data_root
     config.data.packed_cache_root = args.cache_root
     config.data.workers = args.workers
+    config.data.split_file = str(Path(config.data.split_file).resolve())
     original = torch.load(args.original, map_location="cpu", mmap=True, weights_only=False)
     model = build_model(argparse.Namespace(**original["args"]),
                         reference_variance=config.measurement_noise.reference_variance)
