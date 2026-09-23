@@ -61,8 +61,9 @@ def main() -> None:
     optimizer = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad),
                                   lr=args.lr, weight_decay=0)
 
+    packed_split = json.loads((Path(args.cache_root) / "manifest.json").read_text())["split_file"]
     reader = PackedFrameReader(args.cache_root, source_root=args.data_root,
-                               split_file=config.data.split_file)
+                               split_file=packed_split)
     dataset = WindowDataset(reader=reader, split="train", window_size=1,
                             seed=config.sampling.seed, include_tx=False,
                             fixed_starts=tuple(range(100)))
