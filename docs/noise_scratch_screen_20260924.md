@@ -72,3 +72,21 @@
 - Nice2 两种通道 checkpoint 与日志：`/data_16T_137/fzj/RMDM/runs/noise_scratch_paired_20260924/{variance,sigma}`。
 - 三组 JSON 已整理到本地：`/data_p6/fzj/tmp/rmdm_noise_scratch_paired_20260924`。
 - 归档：[汇总 JSON](artifacts/noise_scratch_screen_20260924/summary.json)、[逐条件 CSV](artifacts/noise_scratch_screen_20260924/conditions.csv)，同目录包含每组完整 metadata。
+
+### 与已有模型同协议比较（2026-09-24 补充）
+
+使用 `compare_baselines.py`（commit `6a71ab0`）仅加载已有 checkpoint 做评估，没有继续训练。使用本轮完全相同的 CPU 随机输入、18 个验证条件、每条件 40 帧、DDIM20、batch16。训练预算不同，以下仅比较当前 checkpoint 的实际质量，不能归因于结构。
+
+| 模型 | checkpoint 步数 | 验证平均 MSE |
+|---|---:|---:|
+| 原始 RMDM（干净观测训练） | 21096 | 0.00117284 |
+| 完整噪声感知 T1 | 20250 | 0.00092386 |
+| 本轮方差通道（筛选内最佳） | 3000 | 0.02309707 |
+| 本轮标准差通道（筛选内最佳） | 1000 | 0.05949121 |
+| 本轮 AdaNorm（筛选内最佳） | 1000 | 0.03968297 |
+
+完整 T1 比原始模型总体 MSE 低 21.2%；低噪声（sigma<=0.03）为 0.00061227 对 0.00052744，退化 16.1%；高噪声（sigma>=0.05）为 0.00123546 对 0.00181825，改善 32.1%。其抗噪收益伴随低噪声代价。
+
+本轮最好的方差通道 checkpoint 误差仍为原始模型的 19.7 倍、完整 T1 的 25.0 倍，不能宣称改进。建议先补同预算、随机初始化、不提供噪声水平的对照并排查重建收敛波动，再决定是否进行全量训练。尚未启动额外训练。
+
+原始逐条件结果归档：`artifacts/noise_scratch_screen_20260924/baseline_original.json`、`artifacts/noise_scratch_screen_20260924/baseline_noise_t1.json`。未重评其他架构，没有据此给出跨架构排名。

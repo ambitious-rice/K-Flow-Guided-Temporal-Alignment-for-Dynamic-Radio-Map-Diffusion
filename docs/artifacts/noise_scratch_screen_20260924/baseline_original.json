@@ -1,0 +1,120 @@
+{
+  "evaluation_split": "val",
+  "selection_role": "checkpoint_selection",
+  "checkpoint": "/data_p6/fzj/tmp/rmdm_noise_injection_probe_20260924/original_epoch_009.pth",
+  "checkpoint_step": 21096,
+  "evaluated_model": "original",
+  "ddim_steps": 20,
+  "randomness_device": "cpu",
+  "manifest": "/data_p6/fzj/projects/RMDM_direct_noise/configs/manifests/noise_temporal_rmdm_clean16_val.json",
+  "results": [
+    {
+      "sampling_rate": 1.0,
+      "measurement_sigma": 0.0,
+      "samples": 40,
+      "mse": 0.0006681609724182635
+    },
+    {
+      "sampling_rate": 1.0,
+      "measurement_sigma": 0.01,
+      "samples": 40,
+      "mse": 0.0007204593275673687
+    },
+    {
+      "sampling_rate": 1.0,
+      "measurement_sigma": 0.03,
+      "samples": 40,
+      "mse": 0.001053076412063092
+    },
+    {
+      "sampling_rate": 1.0,
+      "measurement_sigma": 0.05,
+      "samples": 40,
+      "mse": 0.0016824531834572555
+    },
+    {
+      "sampling_rate": 1.0,
+      "measurement_sigma": 0.07,
+      "samples": 40,
+      "mse": 0.0026630212552845476
+    },
+    {
+      "sampling_rate": 1.0,
+      "measurement_sigma": 0.09,
+      "samples": 40,
+      "mse": 0.0034567640628665685
+    },
+    {
+      "sampling_rate": 2.0,
+      "measurement_sigma": 0.0,
+      "samples": 40,
+      "mse": 0.0003571489010937512
+    },
+    {
+      "sampling_rate": 2.0,
+      "measurement_sigma": 0.01,
+      "samples": 40,
+      "mse": 0.00038986527069937436
+    },
+    {
+      "sampling_rate": 2.0,
+      "measurement_sigma": 0.03,
+      "samples": 40,
+      "mse": 0.0005799459759145975
+    },
+    {
+      "sampling_rate": 2.0,
+      "measurement_sigma": 0.05,
+      "samples": 40,
+      "mse": 0.0010157167911529542
+    },
+    {
+      "sampling_rate": 2.0,
+      "measurement_sigma": 0.07,
+      "samples": 40,
+      "mse": 0.0014594796346500516
+    },
+    {
+      "sampling_rate": 2.0,
+      "measurement_sigma": 0.09,
+      "samples": 40,
+      "mse": 0.0023792027030140163
+    },
+    {
+      "sampling_rate": 3.0,
+      "measurement_sigma": 0.0,
+      "samples": 40,
+      "mse": 0.00027380280080251395
+    },
+    {
+      "sampling_rate": 3.0,
+      "measurement_sigma": 0.01,
+      "samples": 40,
+      "mse": 0.000289952612365596
+    },
+    {
+      "sampling_rate": 3.0,
+      "measurement_sigma": 0.03,
+      "samples": 40,
+      "mse": 0.0004145152983255684
+    },
+    {
+      "sampling_rate": 3.0,
+      "measurement_sigma": 0.05,
+      "samples": 40,
+      "mse": 0.000758333713747561
+    },
+    {
+      "sampling_rate": 3.0,
+      "measurement_sigma": 0.07,
+      "samples": 40,
+      "mse": 0.001154935942031443
+    },
+    {
+      "sampling_rate": 3.0,
+      "measurement_sigma": 0.09,
+      "samples": 40,
+      "mse": 0.0017943482846021653
+    }
+  ]
+}
