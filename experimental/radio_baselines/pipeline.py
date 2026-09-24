@@ -65,11 +65,26 @@ def main():
             write_json(status_path, state)
             code = process.wait()
         if code:
+            failed = json.loads((output / 'status.json').read_text()) if (output / 'status.json').exists() else {}
+            failed.update(state='failed', exit_code=code, log=str(root / f'{name}.log'))
+            write_json(output / 'status.json', failed)
             state.update(state='failed', exit_code=code)
             write_json(status_path, state)
             raise SystemExit(code)
         state['completed'].append(name)
         write_json(status_path, state)
+    groups = ({'radiounet': ['radiounet_first', 'radiounet_second'],
+               'rmegan': ['rmegan_global', 'rmegan_local']} if args.lane == 'conv'
+              else {'radiodiff': ['radiodiff']})
+    for method, candidates in groups.items():
+        choices = []
+        for stage in candidates:
+            status = json.loads((root / stage / 'status.json').read_text())
+            choices.append(dict(stage=stage, checkpoint=str(root / stage / 'best.pt'),
+                                mse=status['best_mse'], step=status['best_step']))
+        write_json(root / f'{method}_selected.json', dict(method=method,
+                   selection_role='clean_validation_only', candidates=choices,
+                   selected=min(choices, key=lambda x: x['mse'])))
     state.update(state='complete', finished_at=time.strftime('%Y-%m-%dT%H:%M:%S%z'))
     write_json(status_path, state)
 

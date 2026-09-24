@@ -1,0 +1,200 @@
+{
+  "clean_radio_baselines_smoke_20260924_v1/rmegan_local": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 260141,
+      "best_mse": 0.20846370359261832,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "rmegan",
+    "phase": "second",
+    "global_batch_size": 2,
+    "gpu": "NVIDIA RTX 5880 Ada Generation",
+    "source_commit": "610bdf3334b81dfead6b75e12fb418baf69b9344"
+  },
+  "clean_radio_baselines_smoke_20260924_v1/radiounet_first": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 259613,
+      "best_mse": 0.2078088273604711,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "radiounet",
+    "phase": "first",
+    "global_batch_size": 2,
+    "gpu": "NVIDIA RTX 5880 Ada Generation",
+    "source_commit": "610bdf3334b81dfead6b75e12fb418baf69b9344"
+  },
+  "clean_radio_baselines_smoke_20260924_v1/rmegan_global": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 259932,
+      "best_mse": 0.20989632606506348,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "rmegan",
+    "phase": "first",
+    "global_batch_size": 2,
+    "gpu": "NVIDIA RTX 5880 Ada Generation",
+    "source_commit": "610bdf3334b81dfead6b75e12fb418baf69b9344"
+  },
+  "clean_radio_baselines_smoke_20260924_v1/radiounet_second": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 259823,
+      "best_mse": 0.1894432008266449,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "radiounet",
+    "phase": "second",
+    "global_batch_size": 2,
+    "gpu": "NVIDIA RTX 5880 Ada Generation",
+    "source_commit": "610bdf3334b81dfead6b75e12fb418baf69b9344"
+  },
+  "clean_radio_baselines_smoke_20260924_v2/rmegan_batch32": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 260589,
+      "best_mse": 0.2098899781703949,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "rmegan",
+    "phase": "second",
+    "global_batch_size": 128,
+    "gpu": "NVIDIA RTX 5880 Ada Generation",
+    "source_commit": "bee26a067c920e6c9ccf5c9c920a059412836b54"
+  },
+  "clean_radio_baselines_smoke_20260924_v2/vae_batch8": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 261289,
+      "best_mse": 0.15380939841270447,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "vae",
+    "phase": "first",
+    "global_batch_size": 128,
+    "gpu": "NVIDIA RTX 5880 Ada Generation",
+    "source_commit": "bee26a067c920e6c9ccf5c9c920a059412836b54"
+  },
+  "clean_radio_baselines_smoke_20260924_v2/radiodiff": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 260910,
+      "best_mse": 0.2471214234828949,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "radiodiff",
+    "phase": "first",
+    "global_batch_size": 2,
+    "gpu": "NVIDIA RTX A6000",
+    "source_commit": "bee26a067c920e6c9ccf5c9c920a059412836b54"
+  },
+  "clean_radio_baselines_smoke_20260924_v2/radiodiff_vae": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 260732,
+      "best_mse": 0.34182819724082947,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "vae",
+    "phase": "first",
+    "global_batch_size": 2,
+    "gpu": "NVIDIA RTX A6000",
+    "source_commit": "bee26a067c920e6c9ccf5c9c920a059412836b54"
+  },
+  "clean_radio_baselines_smoke_20260924_v2/diff_batch8": {
+    "status": {
+      "state": "complete",
+      "step": 2,
+      "pid": 261292,
+      "best_mse": 0.20759391287962595,
+      "best_step": 2,
+      "stale": 0,
+      "checks": {
+        "clean_observations": true,
+        "backward": true,
+        "weights_updated": true,
+        "checkpoint_roundtrip": true
+      },
+      "stop_reason": "max_steps"
+    },
+    "method": "radiodiff",
+    "phase": "first",
+    "global_batch_size": 128,
+    "gpu": "NVIDIA RTX A6000",
+    "source_commit": "bee26a067c920e6c9ccf5c9c920a059412836b54"
+  }
+}

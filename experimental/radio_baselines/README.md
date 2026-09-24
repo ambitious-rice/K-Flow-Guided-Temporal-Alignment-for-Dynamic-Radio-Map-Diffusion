@@ -103,7 +103,9 @@ then RME-GAN global/local; each stage caps at 20k optimizer updates. `diffusion`
 runs VAE then RadioDiff, each capped at 40k. All stages use global batch128,
 validate every4k and stop after three non-improving validations. VAE stopping
 waits until its adversarial phase has been exercised. Best stage checkpoint
-initializes the next stage; optimizers reset between stages. Baseline training
+initializes the next stage; optimizers reset between stages. After both convolutional
+stages finish, choose between their best checkpoints by clean validation MSE
+and record the selected stage. Baseline training
 budgets are recorded explicitly and are not claimed to match original RMDM's
 global batch384/27k exactly.
 
@@ -114,9 +116,9 @@ VAE and latent diffusion LR5e-5. Backbone autocast bf16, loss/FFT float32.
 Example (paths supplied by `.agents/config.yaml` and run record):
 
 ```bash
-PYTHONPATH=src:. CUDA_VISIBLE_DEVICES=0 python -m experimental.radio_baselines.pipeline \
+PYTHONPATH=src:. CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 python -m experimental.radio_baselines.pipeline \
   --lane conv --data-root DATA --cache-root CACHE --output UNIQUE_RUN_ROOT
-PYTHONPATH=src:. CUDA_VISIBLE_DEVICES=1 python -m experimental.radio_baselines.pipeline \
+PYTHONPATH=src:. CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 python -m experimental.radio_baselines.pipeline \
   --lane diffusion --data-root DATA --cache-root CACHE --output UNIQUE_RUN_ROOT
 ```
 
