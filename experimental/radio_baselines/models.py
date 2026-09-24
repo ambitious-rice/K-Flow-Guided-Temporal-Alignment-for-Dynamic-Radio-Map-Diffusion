@@ -76,7 +76,7 @@ class RadioVAE(nn.Module):
     def __init__(self):
         super().__init__()
         from .vendor.radiodiff.encoder_decoder import Encoder, Decoder
-        cfg = dict(double_z=True, z_channels=3, resolution=128, in_channels=1,
+        cfg = dict(double_z=True, z_channels=3, resolution=(128, 128), in_channels=1,
                    out_ch=1, ch=128, ch_mult=(1, 2, 4), num_res_blocks=2,
                    attn_resolutions=(), dropout=0.)
         self.encoder = Encoder(**cfg)
