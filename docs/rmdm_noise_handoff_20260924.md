@@ -1,6 +1,6 @@
 # RMDM 观测噪声实验交接（2026-09-24）
 
-> 本会话最新用户调整：原始 RMDM 直接作为 baseline，远程不再训练 RMDM 不同版本。新增 baseline 候选为 RadioDiff、RadioUNet、RME-GAN，均仅用无观测噪声数据训练；本调整取代下文 RMDM 变体训练计划。已核对 Nice2 原始 run 的 train_config.json：packed cache、clean16 split、without_tx=true、采样率 1–10；对应代码的观测为 sampling_mask * target，不添加观测噪声，扩散目标图正常加噪。新 baseline 尚未启动，输入协议的适配范围待明确。
+> 本会话最新用户调整：原始 RMDM 直接作为 baseline，远程不再训练 RMDM 不同版本。新增 baseline 候选为 RadioDiff、RadioUNet、RME-GAN，均仅用无观测噪声数据训练；本调整取代下文 RMDM 变体训练计划。已核对 Nice2 原始 run 的 train_config.json：packed cache、clean16 split、without_tx=true、采样率 1–10；对应代码的观测为 sampling_mask * target，不添加观测噪声，扩散目标图正常加噪。三个 baseline 已完成无 Tx 稀疏观测适配，并于 2026-09-24 12:20 在 Nice2 启动正式训练队列：GPU 0 为 RadioUNet→RME-GAN，GPU 1 为 RadioDiff VAE→潜空间扩散。全部阶段已通过真实数据 smoke；源码 commit 为 fbdabc9。实现与适配说明见 `experimental/radio_baselines/README.md`，实时状态恢复入口为 `.agents/runs/20260924_clean_radio_baselines.yaml`。训练和检查点选择均只用干净观测，测试集未使用。
 
 > 后续用户纠正：要求随机初始化、从头训练，不加载原模型权重；已选择三组各 4,000 步筛选。下文关于“从原始 checkpoint 微调”的下一步已被取代，参见 [从头训练筛选](noise_scratch_screen_20260924.md)。历史结果仍按原实验身份保留。
 
