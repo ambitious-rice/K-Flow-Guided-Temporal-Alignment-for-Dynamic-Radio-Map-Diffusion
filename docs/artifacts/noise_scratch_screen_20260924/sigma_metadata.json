@@ -1,0 +1,428 @@
+{
+  "args": {
+    "mode": "sigma",
+    "output": "/data_16T_137/fzj/RMDM/runs/noise_scratch_paired_20260924/sigma",
+    "config": "experimental/noise_temporal_rmdm/t1.yaml",
+    "data_root": "/data_16T_137/fzj/RMDM/resources/datasets/M20_Formal075_RadioMapSeerPack",
+    "cache": "/home/fzj/.cache/rmdm/noise_temporal_clean16_v2",
+    "steps": 4000,
+    "batch_size": 16,
+    "lr": 0.0001,
+    "warmup": 200,
+    "val_every": 1000,
+    "seed": 20260924,
+    "smoke": false
+  },
+  "config": {
+    "data": {
+      "root": "/data_16T_137/fzj/RMDM/resources/datasets/M20_Formal075_RadioMapSeerPack",
+      "split_file": "/data_16T_137/fzj/RMDM/direct_noise_project/configs/splits/m20_formal075_clean16_scene_split.json",
+      "image_size": 128,
+      "frames_per_video": 100,
+      "window_size": 1,
+      "workers": 0,
+      "prefetch_factor": 4,
+      "cache_size": 8,
+      "packed_cache_root": "/dev/shm/noise_temporal_clean16_train_v2"
+    },
+    "sampling": {
+      "seed": 20260717,
+      "homogeneous_probability": 1.0,
+      "base_rates": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "base_probabilities": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1
+      ],
+      "deltas": [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ],
+      "delta_probabilities": [
+        0.1,
+        0.2,
+        0.4,
+        0.2,
+        0.1
+      ],
+      "extreme_probability_given_heterogeneous": 0.0,
+      "extreme_frame_counts": [
+        1,
+        2
+      ],
+      "extreme_frame_count_probabilities": [
+        0.8,
+        0.2
+      ],
+      "extreme_rates": [
+        0.1,
+        0.2,
+        0.5
+      ],
+      "extreme_rate_probabilities": [
+        0.2,
+        0.3,
+        0.5
+      ]
+    },
+    "measurement_noise": {
+      "clean_probability": 0.2,
+      "nominal_probability": 0.65,
+      "strong_probability": 0.15,
+      "nominal_sigma_min": 0.0,
+      "nominal_sigma_max": 0.05,
+      "strong_sigma_min": 0.05,
+      "strong_sigma_max": 0.09,
+      "reference_variance": 0.0081,
+      "seed": 20260921
+    },
+    "model": {
+      "model_channels": 96,
+      "channel_multipliers": [
+        1,
+        1,
+        2,
+        3,
+        4
+      ],
+      "residual_blocks_per_level": 2,
+      "attention_levels": [
+        3
+      ],
+      "attention_heads": 4,
+      "use_scale_shift_norm": true,
+      "resblock_updown": false,
+      "hwm_base_features": 48,
+      "hwm_channel_multipliers": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "hwm_blocks_per_level": 2,
+      "variance_embedding_dim": 512,
+      "variance_mlp_width": 512,
+      "dropout": 0.0,
+      "gradient_checkpointing": false,
+      "temporal_enabled": false,
+      "temporal_hidden_channels": 192,
+      "temporal_layers": 4,
+      "temporal_heads": 6,
+      "temporal_downsample": 4,
+      "temporal_mlp_ratio": 4.0,
+      "expected_trainable_parameters_min": 50000000,
+      "expected_trainable_parameters_max": 180000000
+    },
+    "diffusion": {
+      "train_timesteps": 1000,
+      "beta_schedule": "linear",
+      "prediction_type": "epsilon",
+      "ddim_steps": 20
+    },
+    "loss": {
+      "diffusion_weight": 1.0,
+      "calibration_weight": 1.0,
+      "pinn_weight": 1.0,
+      "pinn_k": 0.2
+    },
+    "train": {
+      "seed": 20260921,
+      "max_steps": 27000,
+      "per_gpu_batch_size": 128,
+      "gradient_accumulation_steps": 1,
+      "learning_rate": 0.0001,
+      "betas": [
+        0.9,
+        0.95
+      ],
+      "epsilon": 1e-08,
+      "weight_decay": 0.01,
+      "gradient_clip_norm": 1.0,
+      "mixed_precision": "bf16",
+      "warmup_steps": 675,
+      "min_learning_rate": 1e-05,
+      "log_every_steps": 20,
+      "checkpoint_every_steps": 675,
+      "resume_from": ""
+    },
+    "validation": {
+      "subset_manifest": "configs/manifests/noise_temporal_rmdm_clean16_val.json",
+      "included_scenes": [
+        "town02_opt_junction_0298",
+        "town10_junction_0532"
+      ],
+      "excluded_scenes": [
+        "town01_opt_junction_0087",
+        "town05_opt_junction_0053",
+        "town05_opt_junction_0838",
+        "town05_opt_junction_1427"
+      ],
+      "rates": [
+        1.0,
+        2.0,
+        3.0
+      ],
+      "noise_standard_deviations": [
+        0.0,
+        0.01,
+        0.03,
+        0.05,
+        0.07,
+        0.09
+      ],
+      "frame_starts": [
+        0,
+        50
+      ],
+      "batch_size": 16,
+      "ddim_steps": 20,
+      "every_steps": 3375
+    },
+    "final_test": {
+      "subset_manifest": "configs/manifests/noise_temporal_rmdm_clean16_test.json",
+      "included_scenes": [
+        "town04_opt_junction_0053",
+        "town05_opt_junction_0396"
+      ],
+      "excluded_scenes": [
+        "town01_opt_junction_0087",
+        "town05_opt_junction_0053",
+        "town05_opt_junction_0838",
+        "town05_opt_junction_1427"
+      ],
+      "rates": [
+        1.0,
+        2.0,
+        3.0
+      ],
+      "noise_standard_deviations": [
+        0.0,
+        0.01,
+        0.03,
+        0.05,
+        0.07,
+        0.09
+      ],
+      "frame_starts": [
+        0,
+        25,
+        50,
+        75
+      ],
+      "batch_size": 4,
+      "ddim_steps": 20
+    },
+    "runtime": {
+      "output_root": "runs/noise_temporal_rmdm",
+      "phase": "t1",
+      "initialize_from_t1": ""
+    }
+  },
+  "architecture": {
+    "image_size": 128,
+    "in_ch": 6,
+    "out_ch": 1,
+    "num_channels": 96,
+    "num_res_blocks": 2,
+    "channel_mult": "",
+    "num_heads": 4,
+    "num_head_channels": -1,
+    "num_heads_upsample": -1,
+    "attention_resolutions": "16",
+    "dropout": 0.0,
+    "class_cond": false,
+    "use_checkpoint": false,
+    "use_scale_shift_norm": true,
+    "resblock_updown": false,
+    "use_fp16": false,
+    "use_new_attention_order": false,
+    "learn_sigma": false
+  },
+  "initialization": "random_from_scratch",
+  "pretrained_checkpoint": null,
+  "randomness_device": "cpu for masks, observation/diffusion noises, timesteps, dropout",
+  "bn_running_stats": "train",
+  "device": "NVIDIA RTX A6000",
+  "torch": "2.4.1+cu121",
+  "trainable_parameters": 66473825,
+  "modulation_sites": [],
+  "results": {
+    "1000": 0.05949121096895801,
+    "2000": 0.12040306652585667,
+    "3000": 0.09743371051218774,
+    "4000": 0.08205283226238355
+  },
+  "checks": {
+    "paired_first_batch": {
+      "video_id": [
+        "town05_opt_junction_1722/episode_000041/tx_v2_new_02",
+        "town10_junction_0189/episode_000106/tx_28",
+        "town10_junction_0664/episode_000134/tx_14",
+        "town10_junction_0189/episode_000127/tx_15",
+        "town04_opt_junction_0785/episode_000015/tx_new_00",
+        "town10_junction_0664/episode_000049/tx_35",
+        "town02_opt_junction_0188/episode_000089/tx_23",
+        "town10_junction_0719/episode_000094/tx_34",
+        "town05_opt_junction_0207/episode_000063/tx_14",
+        "town10_junction_0895/episode_000017/tx_33",
+        "town10_junction_0023/episode_000148/tx_28",
+        "town01_opt_junction_0143/episode_000066/tx_11",
+        "town04_opt_junction_0785/episode_000106/tx_new_27",
+        "town10_junction_0664/episode_000037/tx_12",
+        "town01_opt_junction_0143/episode_000020/tx_12",
+        "town05_opt_junction_0562/episode_000076/tx_27"
+      ],
+      "start": [
+        71,
+        95,
+        27,
+        81,
+        40,
+        32,
+        3,
+        6,
+        32,
+        41,
+        25,
+        84,
+        82,
+        81,
+        75,
+        6
+      ],
+      "sigma": [
+        0.030114978551864624,
+        0.021715249866247177,
+        0.001819098019041121,
+        0.0,
+        0.06335749477148056,
+        0.0025809824001044035,
+        0.015378588810563087,
+        0.0,
+        0.0,
+        0.04017324000597,
+        0.0,
+        0.0,
+        0.07947883009910583,
+        0.026716534048318863,
+        0.0047411443665623665,
+        0.018994728103280067
+      ],
+      "mask_counts": [
+        687.0,
+        101.0,
+        1040.0,
+        306.0,
+        753.0,
+        841.0,
+        220.0,
+        194.0,
+        610.0,
+        294.0,
+        624.0,
+        1046.0,
+        431.0,
+        525.0,
+        1308.0,
+        227.0
+      ],
+      "timesteps": [
+        154,
+        932,
+        971,
+        739,
+        593,
+        847,
+        484,
+        987,
+        687,
+        163,
+        844,
+        781,
+        825,
+        966,
+        518,
+        208
+      ],
+      "epsilon_first_values": [
+        1.0030934810638428,
+        -1.1815134286880493,
+        0.6780486702919006,
+        -0.06613952666521072,
+        2.622143507003784,
+        0.004829336889088154,
+        2.004850387573242,
+        1.1905701160430908,
+        0.7154911160469055,
+        -0.24235615134239197,
+        1.646405577659607,
+        -1.8089443445205688,
+        -0.37844952940940857,
+        1.1801334619522095,
+        -0.44294437766075134,
+        -0.49132218956947327
+      ],
+      "observed_sum": 4725.1494140625,
+      "target_sum": 92032.828125,
+      "shared_initial_weights": [
+        0.013164404779672623,
+        0.030457813292741776,
+        0.003681369824334979,
+        -0.022681202739477158,
+        0.015988100320100784,
+        0.0256013385951519,
+        0.007721751928329468,
+        -0.020922774448990822,
+        -0.0075756944715976715,
+        -0.008084203116595745,
+        0.009914211928844452,
+        0.016201792284846306,
+        -0.011812967248260975,
+        0.0024510319344699383,
+        0.029990680515766144,
+        -0.0010181012330576777
+      ]
+    },
+    "gradient_step_1": {
+      "backbone.unet.input_blocks.0.0.weight": 0.0,
+      "backbone.unet.out.2.weight": 8.001714706420898
+    },
+    "missing_gradients": [
+      "backbone.unet.hwm.emb_proj.weight",
+      "backbone.unet.hwm.emb_proj.bias"
+    ],
+    "gradient_step_5": {
+      "backbone.unet.input_blocks.0.0.weight": 0.0005267796223051846,
+      "backbone.unet.out.2.weight": 6.748800277709961
+    },
+    "parameter_max_updates": {
+      "backbone.unet.input_blocks.0.0.weight": 0.06661343574523926,
+      "backbone.unet.out.2.weight": 0.014053293503820896
+    },
+    "bn_num_batches_tracked": 4000
+  },
+  "status": "completed",
+  "best_step": 1000,
+  "elapsed_seconds": 1126.733485609293
+}
