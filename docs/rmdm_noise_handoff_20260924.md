@@ -1,5 +1,7 @@
 # RMDM 观测噪声实验交接（2026-09-24）
 
+> 本会话最新用户调整：原始 RMDM 直接作为 baseline，远程不再训练 RMDM 不同版本。新增 baseline 候选为 RadioDiff、RadioUNet、RME-GAN，均仅用无观测噪声数据训练；本调整取代下文 RMDM 变体训练计划。已核对 Nice2 原始 run 的 train_config.json：packed cache、clean16 split、without_tx=true、采样率 1–10；对应代码的观测为 sampling_mask * target，不添加观测噪声，扩散目标图正常加噪。新 baseline 尚未启动，输入协议的适配范围待明确。
+
 > 后续用户纠正：要求随机初始化、从头训练，不加载原模型权重；已选择三组各 4,000 步筛选。下文关于“从原始 checkpoint 微调”的下一步已被取代，参见 [从头训练筛选](noise_scratch_screen_20260924.md)。历史结果仍按原实验身份保留。
 
 ## 用户当前要求与必须纠正的结论

@@ -1,0 +1,14 @@
+{
+  "RadioUNet": {
+    "url": "https://github.com/RonLevie/RadioUNet.git",
+    "commit": "36ab70663443af615c37051ce97da14d04925c7a"
+  },
+  "RME-GAN": {
+    "url": "https://github.com/achinthaw/RME-GAN.git",
+    "commit": "aa1f8802315b15e0f445c2f42c9d1b930fa6ec02"
+  },
+  "RadioDiff": {
+    "url": "https://github.com/UNIC-Lab/RadioDiff.git",
+    "commit": "ee7c4c380037dd6aa30ab675d099b6f62199d3d5"
+  }
+}
