@@ -12,9 +12,10 @@
 - 训练数据、采样与观测噪声分布、扩散目标、HWM 干净重建与 PINN 损失沿用当前 pipeline。
 - 验证仅使用 val：采样率 1%/2%/3%，sigma=0/0.01/0.03/0.05/0.07/0.09，DDIM20，每条件 40 帧，batch 16。不使用 test。
 - 主干随机 seed=20260924，新增模块 seed=20260925，训练顺序与扩散采样 seed=20260926。
+- 训练与验证的采样 mask、观测噪声、扩散噪声及时间步统一在 CPU 生成；HWM Dropout2d 也使用 CPU 生成的通道 mask，再移至 GPU。首批样本 ID、mask 数量、sigma、时间步、噪声取值、共享初始权重均记录并跨机器核对。
 
 ## 实现与限制
 
-入口：`experimental/rmdm_direct_noise/scratch.py`。不同 GPU/PyTorch 版本可能造成数值轨迹差异；运行环境记录在各组 `metadata.json`。4,000 步是筛选预算，不代表充分收敛。
+入口：`experimental/rmdm_direct_noise/scratch.py`。不同 GPU/PyTorch 版本仍可能造成浮点计算差异；运行环境记录在各组 `metadata.json`。4,000 步是筛选预算，不代表充分收敛。首次 GPU 随机数版本发现同 seed 噪声不配对后已中止，不能混入正式 CPU 随机数配对结果。
 
 状态与实际命令以 `.agents/runs/20260924_noise_scratch_screen.yaml` 为准。

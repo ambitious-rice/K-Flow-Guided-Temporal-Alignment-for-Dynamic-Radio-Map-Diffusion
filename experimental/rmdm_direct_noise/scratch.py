@@ -17,10 +17,11 @@ from diffusers import DDPMScheduler
 from utils import build_unet_from_config, cal_pinn_without_source
 from unet import ResBlock
 from rmdm.data import SamplingPolicy, WindowDataset
+from rmdm.diffusion import DDIMSampler, deterministic_noise_like
 from experimental.noise_temporal_rmdm.config import load_config
-from experimental.noise_temporal_rmdm.noise import add_measurement_noise
+from experimental.noise_temporal_rmdm.noise import add_measurement_noise, add_fixed_measurement_noise
 from experimental.noise_temporal_rmdm.packed_data import PackedFrameReader
-from experimental.noise_temporal_rmdm.validation import run_validation
+from experimental.noise_temporal_rmdm.validation import validation_video_ids
 from .model import DirectNoiseRMDM
 
 
@@ -57,6 +58,61 @@ def expand_conv(old, diffusion_input=False):
     return new
 
 
+class PairedDropout2d(nn.Dropout2d):
+    """Generate channel masks on CPU so GPU model differences do not change RNG."""
+    def forward(self, value):
+        if not self.training or self.p == 0:
+            return value
+        mask = (torch.rand(value.shape[0], value.shape[1], 1, 1) >= self.p)
+        return value * mask.to(device=value.device, dtype=value.dtype) / (1 - self.p)
+
+
+def to_cuda(batch):
+    return {k: v.cuda() if torch.is_tensor(v) else v for k, v in batch.items()}
+
+
+@torch.no_grad()
+def run_validation(config, *, checkpoint_path, repository_root, output_path,
+                   model, checkpoint_step, evaluated_model, max_batches=0):
+    """Same val protocol, but all masks/noises generated on CPU across machines."""
+    protocol = config.validation
+    manifest = Path(repository_root) / protocol.subset_manifest
+    ids = validation_video_ids(manifest, included_scenes=protocol.included_scenes,
+                               excluded_scenes=protocol.excluded_scenes)
+    dataset = WindowDataset(root=config.data.root, split='val', split_file=config.data.split_file,
+        window_size=1, seed=config.sampling.seed, include_tx=False,
+        fixed_starts=protocol.frame_starts, video_ids=ids)
+    loader = DataLoader(dataset, batch_size=protocol.batch_size, shuffle=False, num_workers=0)
+    sampling = SamplingPolicy(config.sampling, split='val')
+    sampler = DDIMSampler(config.diffusion)
+    model.eval()
+    rows = []
+    for rate in protocol.rates:
+        for sigma in protocol.noise_standard_deviations:
+            mse_sum = 0.
+            count = 0
+            for i, dense in enumerate(loader):
+                if max_batches and i >= max_batches:
+                    break
+                sparse = add_fixed_measurement_noise(sampling(dense, fixed_rate=rate), sigma,
+                                                     seed=config.measurement_noise.seed)
+                initial = deterministic_noise_like(sparse['target'], video_ids=list(sparse['video_id']),
+                    starts=sparse['start'].tolist(), rate=rate, seed=config.train.seed)
+                sparse = to_cuda(sparse)
+                generated = sampler.sample(model, sparse, initial_noise=initial.cuda(), steps=protocol.ddim_steps)
+                mse = (generated.float() - sparse['target'].float()).flatten(1).square().mean(1)
+                mse_sum += float(mse.sum())
+                count += len(mse)
+            rows.append(dict(sampling_rate=rate, measurement_sigma=sigma, samples=count, mse=mse_sum / count))
+            print(json.dumps(rows[-1]), flush=True)
+    result = dict(evaluation_split='val', selection_role='checkpoint_selection',
+        checkpoint=str(checkpoint_path), checkpoint_step=checkpoint_step,
+        evaluated_model=evaluated_model, ddim_steps=protocol.ddim_steps,
+        randomness_device='cpu', manifest=str(manifest), results=rows)
+    write(Path(output_path), result)
+    return result
+
+
 class ScratchNoiseRMDM(DirectNoiseRMDM):
     def __init__(self, mode, seed=20260924):
         if mode not in ('variance', 'sigma', 'adanorm', 'unconditioned'):
@@ -67,6 +123,10 @@ class ScratchNoiseRMDM(DirectNoiseRMDM):
             torch.manual_seed(seed)
             backbone = build_unet_from_config(dict(ARCHITECTURE))
         super().__init__(backbone, reference_variance=.0081)
+        for module in self.backbone.modules():
+            for name, child in list(module.named_children()):
+                if isinstance(child, nn.Dropout2d):
+                    setattr(module, name, PairedDropout2d(child.p, inplace=False))
         self.mode = mode
         self.reported_sigma = None
         self.norm_names = []
@@ -137,6 +197,7 @@ def main():
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
     config = load_config(args.config)
+    config.data.split_file = str(Path(config.data.split_file).resolve())
     config.data.root = args.data_root
     config.data.workers = 0
     config.validation.batch_size = 16
@@ -157,6 +218,7 @@ def main():
     model = ScratchNoiseRMDM(args.mode, args.seed).cuda()
     metadata = {'args': vars(args), 'config': config.to_dict(), 'architecture': ARCHITECTURE,
         'initialization': 'random_from_scratch', 'pretrained_checkpoint': None,
+        'randomness_device': 'cpu for masks, observation/diffusion noises, timesteps, dropout',
         'bn_running_stats': 'train', 'device': torch.cuda.get_device_name(), 'torch': torch.__version__,
         'trainable_parameters': sum(p.numel() for p in model.parameters()),
         'modulation_sites': model.norm_names, 'results': {}, 'checks': {}, 'status': 'running'}
@@ -182,11 +244,21 @@ def main():
             lr_factor = min(1., (step + 1) / max(1, args.warmup))
             for group in optimizer.param_groups:
                 group['lr'] = args.lr * lr_factor
-            dense = {k: v.cuda() if torch.is_tensor(v) else v for k, v in dense.items()}
             sparse = add_measurement_noise(sampling(dense), config.measurement_noise, epoch=epoch)
+            target_cpu = sparse['target'][:, 0]
+            t_cpu = torch.randint(0, 1000, (target_cpu.shape[0],))
+            epsilon_cpu = torch.randn_like(target_cpu)
+            if step == 0:
+                metadata['checks']['paired_first_batch'] = dict(video_id=list(sparse['video_id']),
+                    start=sparse['start'].tolist(), sigma=sparse['measurement_standard_deviation'].tolist(),
+                    mask_counts=sparse['sampling_mask'].flatten(1).sum(1).tolist(),
+                    timesteps=t_cpu.tolist(), epsilon_first_values=epsilon_cpu.flatten()[:16].tolist(),
+                    observed_sum=float(sparse['observed_rss'].sum()), target_sum=float(target_cpu.sum()),
+                    shared_initial_weights=model.backbone.unet.input_blocks[1][0].in_layers[2].weight.detach().flatten()[:16].cpu().tolist())
+                write(output / 'metadata.json', metadata)
+            sparse = to_cuda(sparse)
             target = sparse['target'][:, 0]
-            t = torch.randint(0, 1000, (target.shape[0],), device='cuda')
-            epsilon = torch.randn_like(target)
+            t, epsilon = t_cpu.cuda(), epsilon_cpu.cuda()
             noisy = diffusion.add_noise(target, epsilon, t)
             with torch.autocast('cuda', dtype=torch.bfloat16):
                 predicted, cal = model(model.encode_conditions(sparse), noisy, t)
