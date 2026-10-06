@@ -60,7 +60,7 @@ def main():
     entries=json.loads((root/f'inputs/{stage}_bank.json').read_text())
     if smoke:entries=entries[:1]
     else:entries=entries[args.shard::args.shards]
-    output=root/('smoke' if smoke else stage)
+    output=root/(f'smoke_gpu{args.shard}' if smoke else stage)
     output.mkdir(exist_ok=True)
     contract=dict(spec=spec,entries=entries,stage=args.stage,shard=args.shard,shards=args.shards)
     mp=output/f'manifest_{args.shard}.json'
