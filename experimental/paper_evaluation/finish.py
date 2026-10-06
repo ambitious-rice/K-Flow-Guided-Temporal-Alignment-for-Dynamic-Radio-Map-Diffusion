@@ -13,7 +13,8 @@ REMOTE='/data_16T_137/fzj/RMDM/runs/paper_test200_20261006'
 def main():
     while True:
         local=json.loads((ROOT/'local_pipeline.json').read_text())
-        remote=subprocess.run(SSH+['test -f '+REMOTE+'/remote_complete.json'],capture_output=True,timeout=30)
+        remote=subprocess.run(SSH+['if test -f '+REMOTE+'/remote_error.json; then exit 2; fi; test -f '+REMOTE+'/remote_complete.json'],capture_output=True,timeout=30)
+        if remote.returncode==2:raise RuntimeError('Remote pipeline failed; inspect remote_error.json and logs')
         if (ROOT/'local_pipeline_error.json').exists():raise RuntimeError('Local pipeline failed; inspect logs')
         if local['state']=='complete' and remote.returncode==0:break
         write_json(ROOT/'finalizer_status.json',dict(state='waiting',local_stage=local.get('stage',local['state']),remote_complete=remote.returncode==0,updated_at=now()))

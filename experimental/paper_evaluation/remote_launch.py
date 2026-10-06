@@ -38,4 +38,11 @@ def main():
         archive.add(root/'logs',arcname='logs')
     subprocess.run(['aliyunpan','upload','--norapid','--skip','--np',str(root/'remote_metrics.tar.gz'),'/fzj/paper_test200_20261006'],check=True)
     (root/'remote_complete.json').write_text(json.dumps(dict(state='complete',finished_at=time.time(),methods=list(checkpoints))))
-if __name__=='__main__':main()
+if __name__=='__main__':
+    try:
+        main()
+    except BaseException as error:
+        if '--root' in sys.argv:
+            error_root=Path(sys.argv[sys.argv.index('--root')+1]);error_root.mkdir(parents=True,exist_ok=True)
+            (error_root/'remote_error.json').write_text(json.dumps(dict(state='failed',error=repr(error),at=time.time())))
+        raise
