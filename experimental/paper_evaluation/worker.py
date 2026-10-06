@@ -12,7 +12,8 @@ from experimental.paired_evaluation.evaluate import load_model,single_frames
 from experimental.paired_evaluation.protocol import metrics
 from experimental.noise_estimation_vem.hvdit import FrozenHVDiT,inference_inputs
 from experimental.noise_estimation_crossfit.core import audited_mle
-from rmdm_noise_estimation.calibration import VarianceCalibration,fit_variance_calibration
+from rmdm_noise_estimation.calibration import VarianceCalibration
+from .calibration import fit_variance_calibration
 from rmdm.diffusion import DDIMSampler
 from .ensemble import PaperEnsemble
 from .prepare import write_json
