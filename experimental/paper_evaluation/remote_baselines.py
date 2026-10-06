@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import sys
 import time
+from types import MethodType
 import numpy as np
 import torch
 
@@ -44,6 +45,32 @@ def model_module(source):
     spec=importlib.util.spec_from_file_location('paper_baseline_models',path/'models.py',submodule_search_locations=[str(path)])
     module=importlib.util.module_from_spec(spec);sys.modules[spec.name]=module;spec.loader.exec_module(module);return module
 
+def deterministic_position_embedding(self,x):
+    """Exact cumulative counts for the upstream all-visible positional mask.
+
+    CUDA float cumsum is rejected by deterministic mode in PyTorch 2.4. Integer
+    coordinate grids produce the identical counts without changing the encoding.
+    """
+    b,h,w,c=x.shape;features=c//2
+    yy=torch.arange(1,h+1,device=x.device,dtype=torch.float32).view(1,h,1).expand(b,h,w)
+    xx=torch.arange(1,w+1,device=x.device,dtype=torch.float32).view(1,1,w).expand(b,h,w)
+    if self.normalize:
+        yy=yy/(yy[:,-1:,:]+1e-5)*self.scale
+        xx=xx/(xx[:,:,-1:]+1e-5)*self.scale
+    dim=torch.arange(features,dtype=torch.float32,device=x.device)
+    dim=self.temperature**(2*(dim//2)/features)
+    px=xx[:,:,:,None]/dim;py=yy[:,:,:,None]/dim
+    px=torch.stack((px[:,:,:,0::2].sin(),px[:,:,:,1::2].cos()),dim=4).flatten(3)
+    py=torch.stack((py[:,:,:,0::2].sin(),py[:,:,:,1::2].cos()),dim=4).flatten(3)
+    return torch.cat((py,px),dim=3).contiguous()
+
+
+def configure_positions(model):
+    for module in model.modules():
+        if type(module).__name__=='PositionEmbeddingSine':
+            module.forward=MethodType(deterministic_position_embedding,module)
+
+
 def latent_noise(entry,stream):
     vi=entry['full_data_video_index'];start=entry['start']
     return torch.stack([torch.randn((3,32,32),generator=torch.Generator().manual_seed(20261006+vi*1000000+(start+t)*100+stream)) for t in range(16)])
@@ -65,8 +92,9 @@ def main():
     if args.limit:entries=entries[:args.limit]
     module=model_module(args.baseline_source);payload=torch.load(args.checkpoint,map_location='cpu',weights_only=False)
     model=module.build_model(args.method,phase=payload.get('args',{}).get('phase','first'));model.load_state_dict(payload['model'],strict=True);model=model.cuda().eval().requires_grad_(False)
+    if args.method=='radiodiff':configure_positions(model)
     root=Path(args.output);root.mkdir(parents=True,exist_ok=True);mp=root/f'manifest_{args.shard}.json'
-    manifest=dict(args=vars(args),entries=entries,precision='fp32',projection='none',radiodiff_steps=20,step=payload.get('step'),torch=str(torch.__version__))
+    manifest=dict(args=vars(args),entries=entries,precision='fp32',projection='none',radiodiff_steps=20,position_embedding='exact coordinate grids in place of all-ones cumsum',step=payload.get('step'),torch=str(torch.__version__))
     if mp.exists() and json.loads(mp.read_text())!=manifest:raise ValueError('Resume configuration changed')
     save_json(mp,manifest);started=time.perf_counter();finished=0;loaded=None;z=None
     def status(state):save_json(root/f'status_{args.shard}.json',dict(state=state,completed=finished,total=len(entries),pid=os.getpid(),updated_at=datetime.now().astimezone().isoformat(),elapsed_seconds=time.perf_counter()-started,gpu=torch.cuda.get_device_name(),peak_memory_gb=torch.cuda.max_memory_allocated()/1e9))
