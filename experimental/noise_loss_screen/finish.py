@@ -14,8 +14,9 @@ def main():
             r=subprocess.run(ssh+[f'cat {remote}/remote_pipeline.json'],capture_output=True,text=True,timeout=25)
             distant=json.loads(r.stdout) if r.returncode==0 else {}
         except (subprocess.TimeoutExpired,json.JSONDecodeError):distant={}
-        (root/'finalizer_status.json').write_text(json.dumps(dict(state='waiting',local=local,remote=distant,updated_at=time.time()),indent=2)+'\n')
-        if local.get('state')=='complete' and distant.get('state')=='complete':break
+        supplement=json.loads((root/'supplement_pipeline.json').read_text()) if (root/'supplement_pipeline.json').exists() else {'state':'not_requested'}
+        (root/'finalizer_status.json').write_text(json.dumps(dict(state='waiting',local=local,remote=distant,supplement=supplement,updated_at=time.time()),indent=2)+'\n')
+        if local.get('state')=='complete' and distant.get('state')=='complete' and supplement.get('state') in ('complete','not_requested'):break
         time.sleep(30)
     destination=root/'download';destination.mkdir(exist_ok=True)
     subprocess.run(['/data_p6/fzj/bin/aliyunpan','download','--nocheck','--np','--saveto',str(destination),'/fzj/noise_loss_screen_20261007/metrics.tar.gz'],check=True)

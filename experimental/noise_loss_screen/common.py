@@ -9,6 +9,8 @@ for name,k in [('k1',1.),('k2',2.),('k3',3.),('off',0.)]:
     for condition in (True,False):
         VARIANTS[name+('' if condition else '_nosigma')]=dict(k=k,observation_weight=0. if name=='off' else 1.,condition=condition)
 VARIANTS.update(k4=dict(k=4.,observation_weight=1.,condition=True),k6=dict(k=6.,observation_weight=1.,condition=True))
+VARIANTS.update(k2_aux01=dict(k=2.,observation_weight=1.,condition=True,auxiliary_weight=.1),
+                k2_aux01_nosigma=dict(k=2.,observation_weight=1.,condition=False,auxiliary_weight=.1))
 
 def write(path,value):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix('.tmp')
@@ -36,7 +38,7 @@ def loss_terms(pred,cal,sparse,source,variant):
     # the model's access to sigma vary; source labels never enter model inputs.
     terms=dict(reconstruction=reconstruction,observation=observation,calibration=calibration,
         equation=equation.mean(),boundary=boundary.mean(),source=anchor.mean())
-    loss=reconstruction+variant['observation_weight']*observation+calibration+terms['equation']+terms['boundary']+terms['source']
+    loss=reconstruction+variant['observation_weight']*observation+variant.get('auxiliary_weight',1.)*(calibration+terms['equation']+terms['boundary']+terms['source'])
     return loss,dict(terms,observation_active_fraction=active)
 
 class TrainingData:
