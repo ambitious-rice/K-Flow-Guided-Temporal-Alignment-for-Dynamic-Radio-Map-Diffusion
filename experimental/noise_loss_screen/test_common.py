@@ -1,5 +1,5 @@
 import torch
-from .common import observation_loss,public,VARIANTS
+from .common import observation_loss,public,VARIANTS,loss_terms
 
 def test_k_relaxes_noisy_observation_constraint():
     pred=torch.tensor([.5,.5]).reshape(2,1,1,1,1)
@@ -17,3 +17,14 @@ def test_sigma_ablation_only_changes_model_input():
     assert torch.equal(s['measurement_variance'],torch.tensor([.001,.004]))
     assert b['measurement_variance'].count_nonzero()==0
     assert VARIANTS['k2']['k']==VARIANTS['k2_nosigma']['k']
+
+def test_auxiliary_weight_scales_only_auxiliary_gradient():
+    x=torch.full((1,2,1,4,4),.3)
+    pred=x.clone().requires_grad_();cal=(x+.1).requires_grad_()
+    s=dict(target=x,observed_rss=x,sampling_mask=torch.ones_like(x),measurement_variance=torch.tensor([.0025]),building=torch.zeros_like(x),vehicle=torch.zeros_like(x))
+    source=torch.ones_like(x)
+    full,_=loss_terms(pred,cal,s,source,VARIANTS['k2'])
+    small,_=loss_terms(pred,cal,s,source,VARIANTS['k2_aux01'])
+    gf=torch.autograd.grad(full,cal,retain_graph=True)[0]
+    gs=torch.autograd.grad(small,cal)[0]
+    torch.testing.assert_close(gs,.1*gf)
