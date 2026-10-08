@@ -211,12 +211,13 @@ class JointTokenDenoiser(nn.Module):
         fine_coordinates = grid_coordinates(
             state.shape[1], state.shape[2], state.shape[3], device=state.device
         )
-        for block in self.local_encoder:
+        for index, block in enumerate(self.local_encoder):
             state = self._run_transformer(
                 block,
                 state,
                 fine_coordinates,
-                local_modulation,
+                local_modulation + cache["encoder_measurement_modulations"][index]
+                if "encoder_measurement_modulations" in cache else local_modulation,
                 condition_high,
             )
 
@@ -227,12 +228,13 @@ class JointTokenDenoiser(nn.Module):
         coarse_coordinates = merge_coordinates(fine_coordinates, temporal_factor=self.temporal_factor)
         global_modulation = self.global_time_modulation(timestep_condition)
         global_modulation = global_modulation + cache.get("global_measurement_modulation", 0)
-        for block in self.global_bottleneck:
+        for index, block in enumerate(self.global_bottleneck):
             state = self._run_transformer(
                 block,
                 state,
                 coarse_coordinates,
-                global_modulation,
+                global_modulation + cache["bottleneck_measurement_modulations"][index]
+                if "bottleneck_measurement_modulations" in cache else global_modulation,
                 condition_low,
             )
 
@@ -241,12 +243,13 @@ class JointTokenDenoiser(nn.Module):
             processed_skip,
             timestep_condition,
         )
-        for block in self.local_decoder:
+        for index, block in enumerate(self.local_decoder):
             state = self._run_transformer(
                 block,
                 state,
                 fine_coordinates,
-                local_modulation,
+                local_modulation + cache["decoder_measurement_modulations"][index]
+                if "decoder_measurement_modulations" in cache else local_modulation,
                 condition_high,
             )
         return self.output_head(state, timestep_condition)

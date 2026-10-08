@@ -64,7 +64,7 @@ class FeatureNoiseModel(nn.Module):
         if self.variant.startswith('reliability'):
             for name in ('input_stem','condition_stem'):
                 setattr(self.base.denoiser,name,ReliabilityStem.from_stem(getattr(self.base.denoiser,name)))
-        if self.variant=='film':
+        if self.variant in ('film','adaln'):
             width=self.config.embedding_width
             self.noise_embedding=mlp(2,width)
             self.noise_heads=nn.ModuleDict({name:zero_linear(nn.Linear(width,size)) for name,size in {
@@ -85,7 +85,7 @@ class FeatureNoiseModel(nn.Module):
             e=self.base.variance_embedding(features)+self.base.rate_embedding(torch.log(rate.clamp_min(1e-4))[:,None]/math.log(10))
             hwm=self.base.hwm(raw,e)
             old={k:head(e) for k,head in self.base.heads.items()}
-        if self.variant=='film':
+        if self.variant in ('film','adaln'):
             noise=self.noise_embedding(torch.stack((q.clamp_min(0).sqrt()/.09,torch.log1p(q/.0009)),-1))
             values={k:old[k]+head(noise) for k,head in self.noise_heads.items()}
         else:values=old

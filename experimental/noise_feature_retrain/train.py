@@ -1,4 +1,4 @@
-"""Two GPUs per matched variant; resumable checkpoints and bounded wall time."""
+"""DDP matched variants; resumable checkpoints and bounded wall time."""
 import argparse,contextlib,copy,json,math,os,time
 from pathlib import Path
 import numpy as np
@@ -26,7 +26,7 @@ def evaluate(model,cfg,inputs,rank,world,*,matrix=False,limit=0,prediction_dir=N
         # fixed input rows without rerunning identical deterministic inference.
         predictions={}
         for sigma in sigmas:
-            key=sigma if model.variant in ('film','reliability') else 'invariant'
+            key=sigma if model.variant not in ('blind','reliability_fixed') else 'invariant'
             if key not in predictions:
                 tick=time.perf_counter();p=sampler.sample(model,public(b,torch.tensor([sigma**2],device='cuda')),initial_noise=initial,steps=50)
                 torch.cuda.synchronize();assert torch.isfinite(p).all();prediction_path=None
@@ -38,11 +38,15 @@ def evaluate(model,cfg,inputs,rank,world,*,matrix=False,limit=0,prediction_dir=N
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--root',required=True);p.add_argument('--variant',choices=VARIANTS,required=True);p.add_argument('--smoke',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--root',required=True);p.add_argument('--variant',choices=(*VARIANTS,'adaln'),required=True);p.add_argument('--smoke',action='store_true');a=p.parse_args()
     local=int(os.environ['LOCAL_RANK']);rank=int(os.environ['RANK']);world=int(os.environ['WORLD_SIZE']);torch.cuda.set_device(local);dist.init_process_group('nccl')
     root=Path(a.root);spec=json.loads((root/'config.json').read_text());inputs=root/'inputs';out=root/(f"smoke_b{spec['microbatch']}_{a.variant}" if a.smoke else a.variant);out.mkdir(exist_ok=True)
     torch.manual_seed(spec['seed']);torch.use_deterministic_algorithms(True);torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False;torch.backends.cudnn.benchmark=False
-    cfg=load_config('experimental/noise_hvdit/w16_tolerance.yaml');base=FeatureNoiseModel(cfg,a.variant).initialize(torch.load(INITIAL,map_location='cpu',weights_only=False)['model']).cuda()
+    from experimental.noise_adaln_retrain.model import BlockNoiseModel
+    cfg=load_config('experimental/noise_hvdit/w16_tolerance.yaml');factory=BlockNoiseModel if a.variant=='adaln' else FeatureNoiseModel
+    if cfg.diffusion.prediction_type!='sample':raise ValueError('Clean-map MSE requires x0/sample prediction')
+    if spec['microbatch']%4:raise ValueError('Microbatch must contain complete noise quartets')
+    base=factory(cfg,a.variant).initialize(torch.load(INITIAL,map_location='cpu',weights_only=False)['model']).cuda()
     model=DDP(base,device_ids=[local],broadcast_buffers=False);ema=copy.deepcopy(base).eval().requires_grad_(False)
     groups=[dict(params=[p for n,p in base.named_parameters() if p.requires_grad and n.startswith('base.denoiser') and 'log_signal_variance' not in n],lr=spec['backbone_lr'],base_lr=spec['backbone_lr']),dict(params=[p for n,p in base.named_parameters() if p.requires_grad and (not n.startswith('base.denoiser') or 'log_signal_variance' in n)],lr=spec['module_lr'],base_lr=spec['module_lr'])]
     groups=[g for g in groups if g['params']];opt=torch.optim.AdamW(groups,betas=(.9,.95),eps=1e-8,weight_decay=.01)
@@ -79,7 +83,7 @@ def main():
             ctx=model.no_sync() if micro<accum-1 else contextlib.nullcontext()
             with ctx:
                 with torch.autocast('cuda',dtype=torch.bfloat16):
-                    prediction=model(noisy,b['timesteps'],public(b,b['measurement_variance']));error=prediction.float()-b['target'];spatial=error.square().mean();temporal=(error[:,1:]-error[:,:-1]).square().mean();loss=spatial+spec['temporal_weight']*temporal
+                    prediction=model(noisy,b['timesteps'],public(b,b['measurement_variance']));error=prediction.float()-b['target'];spatial=error.square().mean();temporal=(error[:,1:]-error[:,:-1]).square().mean();loss=spatial if spec['temporal_weight']==0 else spatial+spec['temporal_weight']*temporal
                 if not torch.isfinite(loss):raise FloatingPointError(f'Loss at{step}')
                 (loss/accum).backward()
             loss_sum+=torch.stack([loss.detach(),spatial.detach(),temporal.detach()])/accum

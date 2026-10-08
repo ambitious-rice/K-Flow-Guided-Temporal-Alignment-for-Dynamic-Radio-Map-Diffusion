@@ -8,7 +8,8 @@ from .model import VARIANTS
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--root',required=True);a=p.parse_args();root=Path(a.root);summary=[];selected=[];by_sigma=[]
-    for variant in VARIANTS:
+    config=json.loads((root/'config.json').read_text())
+    for variant in config.get('variants',VARIANTS):
         status=json.loads((root/variant/'status.json').read_text());d=json.loads((root/variant/'matrix.json').read_text());assert d['complete'];rows=d['rows'];assert len(rows)==504
         tune=[r for r in rows if r['group']=='tune'];fixed={s:float(np.mean([r['metrics']['unobserved_mse'] for r in tune if r['input_sigma']==s])) for s in [0,.03,.05,.09]};best=min(fixed,key=fixed.get)
         selected.append(dict(variant=variant,best_step=status['best_step'],best_weights=status['best_weights'],trained_steps=status['step'],best_fixed_sigma=best,tune_fixed_mse=fixed))

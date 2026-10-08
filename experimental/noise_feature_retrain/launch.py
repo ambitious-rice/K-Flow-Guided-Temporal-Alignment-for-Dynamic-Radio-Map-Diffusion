@@ -1,16 +1,18 @@
-"""Four two-GPU jobs; stop training at7.25h, hard-stop own jobs at8.75h."""
+"""Matched GPU groups; stop training at7.25h, hard-stop own jobs at8.75h."""
 import argparse,json,os,signal,subprocess,sys,time
 from pathlib import Path
 from experimental.noise_loss_screen.common import write
 from .model import VARIANTS
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--root',required=True);a=p.parse_args();root=Path(a.root).resolve();record=Path('.agents/runs/noise_feature_retrain_20261008.yaml')
+    p=argparse.ArgumentParser();p.add_argument('--root',required=True);a=p.parse_args();root=Path(a.root).resolve();record=Path('.agents/runs')/(root.name+'.yaml')
     start=time.time();spec=json.loads((root/'config.json').read_text());spec.update(started_at=start,train_deadline=start+7.25*3600,hard_deadline=start+8.75*3600);write(root/'config.json',spec)
     jobs=[];procs=[]
-    for index,variant in enumerate(VARIANTS):
-        env=dict(os.environ,CUDA_VISIBLE_DEVICES=f'{index*2},{index*2+1}',PYTHONPATH='src:.',OMP_NUM_THREADS='4',CUBLAS_WORKSPACE_CONFIG=':4096:8')
-        command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc_per_node=2','-m','experimental.noise_feature_retrain.train','--root',str(root),'--variant',variant]
+    for index,variant in enumerate(spec.get('variants',VARIANTS)):
+        gpu_pair=spec.get('gpu_pairs',{}).get(variant,f'{index*2},{index*2+1}')
+        env=dict(os.environ,CUDA_VISIBLE_DEVICES=gpu_pair,PYTHONPATH='src:.',OMP_NUM_THREADS='4',CUBLAS_WORKSPACE_CONFIG=':4096:8')
+        world=len(gpu_pair.split(','))
+        command=[sys.executable,'-m','torch.distributed.run','--standalone',f'--nproc_per_node={world}','-m','experimental.noise_feature_retrain.train','--root',str(root),'--variant',variant]
         log=root/f'{variant}.log'
         with log.open('a') as handle:proc=subprocess.Popen(command,env=env,stdout=handle,stderr=subprocess.STDOUT,start_new_session=True)
         procs.append(proc);jobs.append(dict(variant=variant,pid=proc.pid,gpus=env['CUDA_VISIBLE_DEVICES'],command=command,log=str(log)))
