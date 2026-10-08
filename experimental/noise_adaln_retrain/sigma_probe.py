@@ -29,7 +29,10 @@ def main():
     initial_state=torch.load(INITIAL,map_location='cpu',weights_only=False)['model']
     model=factory(cfg,a.variant).initialize(initial_state).cuda().eval();del initial_state
     sampler=DDIMSampler(cfg.diffusion);entries=json.loads((root/'sigma_probe/entries.json').read_text());rows=[];started=time.time()
-    for label,filename,weights in STAGES:
+    # Hard-linked snapshots may refer to the same completed training checkpoint.
+    # Do not mistake duplicate files for independent training stages.
+    stages=STAGES[:4] if (out/'later.pt').samefile(out/'final.pt') else STAGES
+    for label,filename,weights in stages:
         if filename:
             payload=torch.load(out/filename,map_location='cpu',weights_only=False);model.load_state_dict(payload[weights]);step=payload['step'];del payload;gc.collect()
         else:step=0
@@ -58,7 +61,7 @@ def main():
         write(out/'rows.json',dict(complete=False,rows=rows))
         print(label,step,'done',flush=True)
     summary=[]
-    for label,_,_ in STAGES:
+    for label in dict.fromkeys(r['checkpoint'] for r in rows):
         part=[r for r in rows if r['checkpoint']==label]
         matrix=[[float(np.mean([r['metrics']['unobserved_mse'] for r in part if r['sigma']==truth and r['input_sigma']==given])) for given in SIGMAS] for truth in SIGMAS]
         correct=float(np.mean([r['metrics']['unobserved_mse'] for r in part if r['sigma']==r['input_sigma']]))
