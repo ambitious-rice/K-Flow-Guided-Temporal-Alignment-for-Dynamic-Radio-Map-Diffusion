@@ -36,6 +36,9 @@ def main():
                 try:proc.wait(timeout=10)
                 except subprocess.TimeoutExpired:os.killpg(proc.pid,signal.SIGKILL);proc.wait(timeout=30)
                 j['state']='ready_to_resume' if (path/'training/last.pt').exists() else 'time_limit'
+                status_path=path/'training/status.json'
+                if not a.smoke and status_path.exists():
+                    saved=json.loads(status_path.read_text());saved.update(state=j['state'],reason='hard_time_limit',resume_checkpoint=str(path/'training/last.pt'),note='Saved checkpoint may precede last logged step; final evaluation may be partial');write(status_path,saved)
         write(root/('smoke_pipeline.json' if a.smoke else 'pipeline.json'),dict(started_at=start,updated_at=time.time(),jobs=snapshot()))
         if any(j['state']=='running' for j in jobs.values()):time.sleep(10)
     for h in handles:h.close()

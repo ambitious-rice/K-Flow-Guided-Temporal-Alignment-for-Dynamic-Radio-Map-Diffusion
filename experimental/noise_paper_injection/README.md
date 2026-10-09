@@ -59,7 +59,8 @@ microbatch/accumulation equally in all arms while preserving global32.
 
 Reuse the exact `noise_scratch_full_20261008/inputs` bank; no new observations
 or random masks. Tune8videos x3rates x4truth levels x4input levels, raw+EMA at
-0,500,1000,1500,2000,2500,3000,and every1000. Early stop: protect4000 steps;
+500,1000,1500,2000,2500,3000,and every1000. Smoke checks initial and8step
+validation; formal run skips duplicate random-initial validation. Early stop: protect4000 steps;
 patience4 thereafter; reset for0.2%relative MSE improvement OR0.002absolute
 alignment-gain improvement. Save every500; archive at each validation. Preserve
 model,EMA,optimizer,per-rankRNG,stopping state for resume.

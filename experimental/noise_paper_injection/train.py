@@ -77,7 +77,7 @@ def main():
         base.train();torch.set_rng_state(cpu_rng);torch.cuda.set_rng_state(cuda_rng);dist.barrier()
     status('initializing')
     if start==0 and monitor.state['last_step'] is None:
-        validation()
+        if a.smoke or spec.get('initial_validation',True):validation()
         checkpoint(archive=not a.smoke)
     base.train();deadline=float('inf') if a.smoke else spec['train_deadline'];stopped=False;reason='max_steps'
     for step in range(start+1,steps+1):

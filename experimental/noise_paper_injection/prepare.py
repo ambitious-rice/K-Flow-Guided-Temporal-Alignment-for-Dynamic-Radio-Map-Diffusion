@@ -28,7 +28,7 @@ def main():
         (root/'inputs').symlink_to(old/'inputs',target_is_directory=True)
         (root/'model_config.yaml').write_text((old/'model_config.yaml').read_text())
         spec=dict(variant=variant,gpus=gpus,seed=20261009,max_steps=40000,microbatch=8,accumulation=2,learning_rate=1e-4,warmup=1000,ema_decay=.999,
-                  validation_every=1000,validation_milestones=[500,1500,2500],checkpoint_every=500,rollout_gap=20,prox_lambda=7.,train_hours=7.,total_hours=8.75,
+                  validation_every=1000,validation_milestones=[500,1500,2500],initial_validation=False,checkpoint_every=500,rollout_gap=20,prox_lambda=7.,train_hours=7.,total_hours=8.75,
                   early_stopping=dict(min_steps=4000,patience=4,mse_relative_delta=.002,alignment_absolute_delta=.002))
         write(root/'config.json',spec)
     record=dict(goal=protocol['goal'],status='prepared',cwd=str(Path.cwd()),environment='/data_p6/fzj/conda/envs/RMDM/bin/python',protocol=protocol,
