@@ -30,6 +30,10 @@ def collect(root,remote_root,cloud):
     else:raise TimeoutError('Supplement not exported within30h;localV1 unaffected')
     subprocess.run(['aliyunpan','download','--np','--saveto',str(dest),cloud+'/supplement_results.tar.gz'],check=True)
     archive=dest/'supplement_results.tar.gz'
+    if not archive.exists():
+        matches=list(dest.rglob('supplement_results.tar.gz'))
+        assert len(matches)==1, matches
+        archive=matches[0]
     with tarfile.open(archive) as tar:tar.extractall(dest,filter='data')
     assert len(list((dest/'results').glob('worker*/cases/*.json')))==7200
     while not (root/'tables/report.json').exists():
