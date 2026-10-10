@@ -29,6 +29,8 @@ class Loss:
     obstacle: float = 1.0
     source: float = 1.0
     clean_observation: float = 1.0
+    observation_mode: str = "clean"
+    observation_tolerance_k: float = 1.0
     pinn_k: float = 0.2
 
 
@@ -55,6 +57,7 @@ class Config:
     loss: Loss = field(default_factory=Loss)
     evaluation: Evaluation = field(default_factory=Evaluation)
     embedding_width: int = 512
+    use_clean_indicator: bool = True
     source_masks: str = "/dev/shm/noise_hvdit_source_masks.npy"
     output: str = "runs/noise_hvdit/w1_x0"
 
@@ -63,4 +66,11 @@ class Config:
 
 
 def load_config(path):
-    return _from_mapping(Config, yaml.safe_load(Path(path).read_text()) or {})
+    config = _from_mapping(Config, yaml.safe_load(Path(path).read_text()) or {})
+    if config.loss.observation_mode not in ("clean", "tolerance"):
+        raise ValueError("Unknown observation loss mode")
+    if not 0 <= config.loss.observation_tolerance_k < float("inf"):
+        raise ValueError("Observation tolerance k must be finite and nonnegative")
+    if config.loss.observation_mode == "tolerance" and config.diffusion.prediction_type != "sample":
+        raise ValueError("Tolerance recipe currently requires x0 prediction")
+    return config

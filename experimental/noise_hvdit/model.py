@@ -53,8 +53,9 @@ class NoiseHVDiT(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.reference_variance = config.measurement_noise.reference_variance
+        self.use_clean_indicator = config.use_clean_indicator
         width = config.embedding_width
-        self.variance_embedding = mlp(3, width)
+        self.variance_embedding = mlp(3 if self.use_clean_indicator else 2, width)
         self.rate_embedding = mlp(1, width)
         self.hwm = ConditionedHWM(width)
         self.denoiser = JointTokenDenoiser(config.model, frames=config.data.window_size)
@@ -74,7 +75,10 @@ class NoiseHVDiT(nn.Module):
         raw["tx"] = torch.zeros_like(raw["building"])
         variance = batch["measurement_variance"].float().reshape(-1)
         ratio = variance / self.reference_variance
-        features = torch.stack([ratio, torch.log1p(ratio), (variance == 0).float()], -1)
+        features = [ratio, torch.log1p(ratio)]
+        if self.use_clean_indicator:
+            features.append((variance == 0).float())
+        features = torch.stack(features, -1)
         rate = batch["sampling_rate"].float().reshape(len(variance), -1).mean(1)
         e = self.variance_embedding(features) + self.rate_embedding(torch.log(rate.clamp_min(1e-4))[:, None] / math.log(10))
         raw["input_observation_modulation"] = self.heads["input_observation"](e).chunk(2, -1)
