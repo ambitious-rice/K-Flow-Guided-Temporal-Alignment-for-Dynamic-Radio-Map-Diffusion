@@ -5,6 +5,7 @@ import csv
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
@@ -249,14 +250,52 @@ def launch(root, cloud):
     write(root/'export.json',dict(state='uploaded',cloud=cloud+'/results.tar.gz',bytes=archive.stat().st_size,cases=len(files)))
 
 
+def collect(root):
+    record=Path('.agents/runs')/(root.name+'.yaml')
+    info=json.loads(record.read_text()); remote=info['remote']; started=time.time()
+    state_path=root/'collection_status.json'
+    try:
+        while time.time()-started < 6*3600:
+            command='cat '+shlex.quote(remote['root']+'/export.json')
+            result=subprocess.run(remote['ssh']+[command],capture_output=True,text=True,timeout=30)
+            if result.returncode==0 and json.loads(result.stdout).get('state')=='uploaded':
+                break
+            jobs=subprocess.run(remote['ssh']+['cat '+shlex.quote(remote['root']+'/jobs.json')],
+                                capture_output=True,text=True,timeout=30)
+            if jobs.returncode==0:
+                assert not any(j.get('exit_code') not in (None,0) for j in json.loads(jobs.stdout)), jobs.stdout
+            write(state_path,dict(state='waiting_remote',updated_at=time.time()))
+            time.sleep(30)
+        else:raise TimeoutError('Remote results not exported within6h')
+        dest=root/'remote_results';dest.mkdir(exist_ok=True)
+        with (root/'download_results.log').open('a') as log:
+            subprocess.run(['aliyunpan','download','--np','--saveto',str(dest),remote['cloud']+'/results.tar.gz'],
+                           stdout=log,stderr=subprocess.STDOUT,check=True)
+        archives=list(dest.rglob('results.tar.gz'));assert len(archives)==1,archives
+        with tarfile.open(archives[0]) as tar:tar.extractall(dest,filter='data')
+        summarize(dest)
+        summary=json.loads((dest/'tables/report.json').read_text())
+        info=json.loads(record.read_text());info.update(status='complete',finished_at=time.time(),
+            result=str(dest/'tables/report.json'),summary=summary['combined_windows']['combined'],
+            all12_videos=summary['combined_windows']['all12_videos'],
+            next='Report all20-video metrics, by-rate and per-video sigma alignment; frozen checkpoint and sample list unchanged.')
+        write(record,info);write(state_path,dict(state='complete',finished_at=time.time(),report=info['result']))
+        print(json.dumps(dict(state='complete',report=info['result'],summary=info['summary']),ensure_ascii=False),flush=True)
+    except Exception as exc:
+        write(state_path,dict(state='failed',error=repr(exc),updated_at=time.time()))
+        info=json.loads(record.read_text());info.update(status='collection_failed',error=repr(exc));write(record,info)
+        raise
+
+
 def main():
-    p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','worker','summarize','launch'])
+    p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','worker','summarize','launch','collect'])
     p.add_argument('--root',required=True);p.add_argument('--rank',type=int,default=0)
     p.add_argument('--limit',type=int,default=0);p.add_argument('--steps',type=int,default=50);p.add_argument('--cloud')
     a=p.parse_args();torch.set_num_threads(4);root=Path(a.root).resolve()
     if a.mode=='prepare':prepare(root)
     elif a.mode=='worker':worker(root,a.rank,a.limit,a.steps)
     elif a.mode=='summarize':summarize(root)
+    elif a.mode=='collect':collect(root)
     else:launch(root,a.cloud)
 
 
