@@ -5,7 +5,7 @@ Select 500 video IDs uniformly without replacement from the sorted 1500-video
 original test population with NumPy PCG64 seed20261011. A video is a
 scene/episode/transmitter record, matching the dataset's existing definition.
 
-Evaluate the first and last16frames (zero-based starts0,84 for100-frame videos),
+Evaluate the first and last16frames within the first96frames (zero-based starts0,80),
 1/2/3percent sampling, and true/input sigma in0,.03,.05,.09. Use FP32DDIM50,
 eta0, and a batch of the four input-sigma conditions. Noise-free ground truth
 is used to construct synthetic observations and evaluate outputs; only the
@@ -39,3 +39,7 @@ Temporal differences are computed within each window only.
 The final split's `video_indices` mapping retains the original candidate indices;
 `tables/selected200_reuse_index.csv` points to each frozen input and saved output.
 Do not overwrite the earlier test200split or mix checkpoints/window protocols.
+
+The user fixed the evaluation horizon at96frames. An initial tail84 preparation
+was superseded before selection; only unchanged head0outputs can be reused from
+that preparation. Tail84 artifacts are archived and excluded from all tables.

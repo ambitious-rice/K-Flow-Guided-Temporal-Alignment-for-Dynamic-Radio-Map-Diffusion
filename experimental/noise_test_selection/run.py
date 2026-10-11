@@ -44,7 +44,7 @@ def prepare(root,project):
     assert len(population)==len(set(population))==1500
     videos=sorted(np.random.default_rng(SEED).choice(population,500,replace=False).tolist())
     dataset=WindowDataset(root=str(data_root),split='test',split_file=str(splitfile),window_size=16,
-                          include_tx=False,video_ids=videos,fixed_starts=[0,84])
+                          include_tx=False,video_ids=videos,fixed_starts=[0,80])
     counts={r.video_id:dataset.reader.frame_count(r) for r in dataset.reader.records}
     assert set(counts)==set(videos) and set(counts.values())=={100},'Head/tail windows must match actual video length'
     checkpoint=formal/'training/selected.pt'
@@ -61,12 +61,12 @@ def prepare(root,project):
     for size in sizes:
         allocations.append(sorted(order[offset:offset+size]));offset+=size
     assert sorted(i for part in allocations for i in part)==list(range(500))
-    spec=dict(protocol_id=root.name+'_v1',seed=SEED,population_count=1500,videos=videos,starts=[0,84],
+    spec=dict(protocol_id=root.name+'_v1',seed=SEED,population_count=1500,videos=videos,starts=[0,80],
         rates=[1,2,3],sigmas=SIGMAS,window_size=16,steps=50,eta=0,precision='float32',weights='model',checkpoint_step=7000,
         checkpoint=str(checkpoint),source_data_root=str(data_root),split='test',selected_count=200,
         selection='Uniform500withoutreplacement from sorted1500testvideoIDs; NumPy PCG64 seed20261011; no stratification or outcome filtering of candidates',
         video_unit='scene/episode/transmitter as in original1500-video test population',
-        windows='0-based[0,16) and[84,100); first and last16frames of each100framevideo',
+        windows='0-based[0,16) and[80,96); first and last16frames within the96frame evaluation horizon',protocol_revision=2,evaluation_frames=96,
         rng='CPUtorch seed20261011+candidate_video_index*1000000+absolute_frame*10+stream(mask0,measurement1,initial2)',
         pairing='Nested1/2/3percent free-space masks; same Gaussian measurement field and diffusion initial state across all sigma interventions; no clipping of noisy RSS',
         ranking='Pool two windows SSE/count per video/rate/true/input sigma; G=(min_wrong_MSE-correct_MSE)/max(min_wrong_MSE,1e-12); rank descending meanG over12rate/true_sigma cells; tie lower mean correctMSE then videoID; select200 regardless of all-cells pass',
@@ -99,14 +99,14 @@ def prepare(root,project):
         if count%20==0 or count==1000:
             state=dict(state='complete' if count==1000 else 'preparing',windows=count,total=1000)
             write(root/'prepare_status.json',state);print(json.dumps(state),flush=True)
-    with tarfile.open(root/'remote_inputs.tar','w') as tar:
+    with tarfile.open(root/'remote_inputs_w96.tar','w') as tar:
         for name in ['protocol.json','manifest.json','candidate500.json','population1500.json','allocation.json','model_config.yaml','scene_split.json','checkpoint.pt']:
             tar.add(root/name,arcname=name)
         for rank in spec['remote_ranks']:
             for vi in allocations[rank]:
                 for start in spec['starts']:
                     name='inputs/'+input_name(vi,start);tar.add(root/name,arcname=name)
-    write(root/'prepare_status.json',dict(state='complete',windows=1000,total=1000,remote_archive_bytes=(root/'remote_inputs.tar').stat().st_size))
+    write(root/'prepare_status.json',dict(state='complete',windows=1000,total=1000,remote_archive_bytes=(root/'remote_inputs_w96.tar').stat().st_size))
 
 
 @torch.inference_mode()
@@ -135,7 +135,7 @@ def worker(root,rank,limit):
             data={k:v.cuda() if torch.is_tensor(v) else v for k,v in data.items()}
             for rate in spec['rates']:
                 for sigma in SIGMAS:
-                    if limit and (vi!=assigned[0] or (start,rate,sigma) not in [(0,1,0.),(84,3,.09)][:limit]):
+                    if limit and (vi!=assigned[0] or (start,rate,sigma) not in [(0,1,0.),(80,3,.09)][:limit]):
                         continue
                     stem=case_name(vi,start,rate,sigma);dest=out/'cases'/(stem+'.json');predpath=out/'predictions'/(stem+'.pt');seconds=None
                     if not (dest.exists() and predpath.exists()):

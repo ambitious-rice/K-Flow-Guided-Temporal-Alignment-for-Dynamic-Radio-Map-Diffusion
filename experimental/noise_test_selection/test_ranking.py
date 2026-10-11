@@ -40,7 +40,7 @@ def test_summary_preserves_candidate_indices_and_reuse(tmp_path):
     from .run import summarize,case_name
     from experimental.noise_loss_screen.common import write
     videos=['scene/episode0/tx0','scene/episode1/tx0']
-    spec=dict(protocol_id='unit',videos=videos,starts=[0,84],rates=[1,2,3],sigmas=[0.,.03,.05,.09],
+    spec=dict(protocol_id='unit',videos=videos,starts=[0,80],rates=[1,2,3],sigmas=[0.,.03,.05,.09],
               expected_cases=48,expected_merged_rows=96,selected_count=1,seed=42,ranking='mean signed relative gain')
     write(tmp_path/'protocol.json',spec)
     for vi,video in enumerate(videos):
