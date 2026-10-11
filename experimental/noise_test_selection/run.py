@@ -116,6 +116,7 @@ def worker(root,rank,limit):
     from rmdm.diffusion import DDIMSampler
     torch.cuda.set_device(0);torch.manual_seed(SEED);torch.use_deterministic_algorithms(True)
     torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False;torch.backends.cudnn.benchmark=False
+    assert limit in (0,1,2), 'Smoke covers head-clean and tail-high-noise'
     spec=json.loads((root/'protocol.json').read_text());assigned=spec['worker_video_indices'][rank]
     out=root/('smoke' if limit else 'results')/f'worker{rank}';out.mkdir(parents=True,exist_ok=True)
     cfg=load_config(str(root/'model_config.yaml'));model=CombinedNoiseDiT(cfg,'hybrid_paired',20,7.).cuda().eval()
@@ -134,6 +135,8 @@ def worker(root,rank,limit):
             data={k:v.cuda() if torch.is_tensor(v) else v for k,v in data.items()}
             for rate in spec['rates']:
                 for sigma in SIGMAS:
+                    if limit and (vi!=assigned[0] or (start,rate,sigma) not in [(0,1,0.),(84,3,.09)][:limit]):
+                        continue
                     stem=case_name(vi,start,rate,sigma);dest=out/'cases'/(stem+'.json');predpath=out/'predictions'/(stem+'.pt');seconds=None
                     if not (dest.exists() and predpath.exists()):
                         b={k:data[k].float() for k in ('target','building','vehicle','valid_mask')};mask=data['masks'][rate].cuda().float()
