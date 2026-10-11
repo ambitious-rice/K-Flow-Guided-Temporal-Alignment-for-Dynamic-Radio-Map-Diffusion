@@ -60,6 +60,10 @@ def prepare(root,project):
     allocations=[];offset=0
     for size in sizes:
         allocations.append(sorted(order[offset:offset+size]));offset+=size
+    extra=allocations[8]+allocations[9]
+    allocations=allocations[:8]
+    for j,vi in enumerate(extra):allocations[j%8].append(vi)
+    allocations=[sorted(part) for part in allocations]
     assert sorted(i for part in allocations for i in part)==list(range(500))
     spec=dict(protocol_id=root.name+'_v1',seed=SEED,population_count=1500,videos=videos,starts=[0,80],
         rates=[1,2,3],sigmas=SIGMAS,window_size=16,steps=50,eta=0,precision='float32',weights='model',checkpoint_step=7000,
@@ -73,10 +77,14 @@ def prepare(root,project):
         ranking_metric='valid-unobserved MSE',
         inference='FP32 DDIM50 eta0, four input-sigmas batched; no projection or sigma remapping; six public model input fields only',
         retention='All500inputs and all48000FP32W16predictions; per-window sufficient stats, merged tables, all500ranking, selected200split and reuse index',
-        worker_video_indices=allocations,worker_hosts=['local']*8+['remote']*2,
-        local_ranks=list(range(8)),remote_ranks=[8,9],local_gpus=list(range(8)),remote_gpus=[0,1],
+        worker_video_indices=allocations,worker_hosts=['local']*8,
+        local_ranks=list(range(8)),remote_ranks=[],local_gpus=list(range(8)),remote_gpus=[],
         expected_windows=1000,expected_cases=12000,expected_prediction_rows=48000,expected_merged_rows=24000)
-    if (root/'protocol.json').exists():assert json.loads((root/'protocol.json').read_text())==spec
+    if (root/'protocol.json').exists():
+        existing=json.loads((root/'protocol.json').read_text())
+        for key in ('videos','starts','rates','sigmas','seed','steps','checkpoint_step','weights','ranking'):
+            assert existing[key]==spec[key],key
+        spec=existing;allocations=spec['worker_video_indices']
     write(root/'protocol.json',spec)
     write(root/'population1500.json',dict(seed=SEED,split='test',videos=population))
     write(root/'candidate500.json',dict(seed=SEED,split='test',videos=videos))
@@ -99,14 +107,16 @@ def prepare(root,project):
         if count%20==0 or count==1000:
             state=dict(state='complete' if count==1000 else 'preparing',windows=count,total=1000)
             write(root/'prepare_status.json',state);print(json.dumps(state),flush=True)
-    with tarfile.open(root/'remote_inputs_w96.tar','w') as tar:
-        for name in ['protocol.json','manifest.json','candidate500.json','population1500.json','allocation.json','model_config.yaml','scene_split.json','checkpoint.pt']:
-            tar.add(root/name,arcname=name)
-        for rank in spec['remote_ranks']:
-            for vi in allocations[rank]:
-                for start in spec['starts']:
-                    name='inputs/'+input_name(vi,start);tar.add(root/name,arcname=name)
-    write(root/'prepare_status.json',dict(state='complete',windows=1000,total=1000,remote_archive_bytes=(root/'remote_inputs_w96.tar').stat().st_size))
+    if spec['remote_ranks']:
+        with tarfile.open(root/'remote_inputs_w96.tar','w') as tar:
+            for name in ['protocol.json','manifest.json','candidate500.json','population1500.json','allocation.json','model_config.yaml','scene_split.json','checkpoint.pt']:
+                tar.add(root/name,arcname=name)
+            for rank in spec['remote_ranks']:
+                for vi in allocations[rank]:
+                    for start in spec['starts']:
+                        name='inputs/'+input_name(vi,start);tar.add(root/name,arcname=name)
+    write(root/'prepare_status.json',dict(state='complete',windows=1000,total=1000))
+
 
 
 @torch.inference_mode()
@@ -114,51 +124,58 @@ def worker(root,rank,limit):
     from experimental.noise_combined.model import CombinedNoiseDiT
     from experimental.noise_hvdit.config import load_config
     from rmdm.diffusion import DDIMSampler
+    from .batching import build_group
     torch.cuda.set_device(0);torch.manual_seed(SEED);torch.use_deterministic_algorithms(True)
     torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False;torch.backends.cudnn.benchmark=False
     assert limit in (0,1,2), 'Smoke covers head-clean and tail-high-noise'
     spec=json.loads((root/'protocol.json').read_text());assigned=spec['worker_video_indices'][rank]
+    case_batch=int(spec.get('inference_cases_per_batch',1));assert 1<=case_batch<=12
     out=root/('smoke' if limit else 'results')/f'worker{rank}';out.mkdir(parents=True,exist_ok=True)
     cfg=load_config(str(root/'model_config.yaml'));model=CombinedNoiseDiT(cfg,'hybrid_paired',20,7.).cuda().eval()
     d=torch.load(root/'checkpoint.pt',map_location='cpu',weights_only=False,mmap=True)
     assert d['step']==7000 and d['weights']=='model';model.load_state_dict(d['model'],strict=True);del d
     sampler=DDIMSampler(cfg.diffusion);done=0;started=time.time();total=limit or len(assigned)*24
     def status(state,**extra):
-        data=dict(state=state,pid=os.getpid(),rank=rank,completed_cases=done,total_cases=total,elapsed=time.time()-started,
-            gpu=torch.cuda.get_device_name(),torch=str(torch.__version__),peak_gb=torch.cuda.max_memory_allocated()/1e9,**extra)
-        write(out/'status.json',data);return data
+        value=dict(state=state,pid=os.getpid(),rank=rank,completed_cases=done,total_cases=total,elapsed=time.time()-started,
+            gpu=torch.cuda.get_device_name(),torch=str(torch.__version__),peak_gb=torch.cuda.max_memory_allocated()/1e9,
+            cases_per_batch=case_batch,max_model_batch=4*case_batch,**extra)
+        write(out/'status.json',value);return value
     status('running')
     for vi in assigned:
+        if limit and vi!=assigned[0]:break
         for start in spec['starts']:
+            selected=[(rate,sigma) for rate in spec['rates'] for sigma in SIGMAS
+                      if not limit or (start,rate,sigma) in [(0,1,0.),(80,3,.09)][:limit]]
+            pending=[]
+            for rate,sigma in selected:
+                stem=case_name(vi,start,rate,sigma)
+                if (out/'cases'/(stem+'.json')).exists() and (out/'predictions'/(stem+'.pt')).exists():done+=1
+                else:pending.append((rate,sigma))
+            if not pending:continue
             data=torch.load(root/'inputs'/input_name(vi,start),weights_only=True)
             assert data['video_id']==spec['videos'][vi] and data['protocol_id']==spec['protocol_id'] and data['start']==start
             data={k:v.cuda() if torch.is_tensor(v) else v for k,v in data.items()}
-            for rate in spec['rates']:
-                for sigma in SIGMAS:
-                    if limit and (vi!=assigned[0] or (start,rate,sigma) not in [(0,1,0.),(80,3,.09)][:limit]):
-                        continue
-                    stem=case_name(vi,start,rate,sigma);dest=out/'cases'/(stem+'.json');predpath=out/'predictions'/(stem+'.pt');seconds=None
-                    if not (dest.exists() and predpath.exists()):
-                        b={k:data[k].float() for k in ('target','building','vehicle','valid_mask')};mask=data['masks'][rate].cuda().float()
-                        b.update(sampling_mask=mask,observed_rss=mask*(b['target']+sigma*data['measurement_noise']),sampling_rate=torch.full(b['target'].shape[:2],float(rate),device='cuda'))
-                        inp=public(b,torch.tensor(SIGMAS,device='cuda').square())
-                        assert set(inp)=={'building','vehicle','observed_rss','sampling_mask','sampling_rate','measurement_variance'}
-                        inp={k:v if k=='measurement_variance' else v.repeat(4,*([1]*(v.ndim-1))) for k,v in inp.items()}
-                        torch.cuda.synchronize();tick=time.perf_counter()
-                        pred=sampler.sample(model,inp,initial_noise=data['initial'].repeat(4,1,1,1,1),steps=50,eta=0)
-                        torch.cuda.synchronize();seconds=time.perf_counter()-tick
-                        assert torch.isfinite(pred).all()
-                        rows=[dict(video_id=spec['videos'][vi],video_index=vi,start=start,rate=rate,sigma=sigma,input_sigma=s,
-                            prediction_index=j,stats=sufficient_stats(pred[j:j+1],b)) for j,s in enumerate(SIGMAS)]
-                        save(predpath,dict(predictions=pred.cpu(),input_sigmas=SIGMAS,true_sigma=sigma,rate=rate,video_index=vi,
-                            video_id=spec['videos'][vi],start=start,steps=50,weights='model',checkpoint_step=7000,protocol_id=spec['protocol_id']))
-                        write(dest,dict(rows=rows,seconds=seconds,steps=50,protocol_id=spec['protocol_id'],prediction_file=str(predpath.relative_to(root))))
-                        del pred,inp,b
-                    done+=1;state=status('running',last_case_seconds=seconds)
-                    if done%12==0 or limit:print(json.dumps(state),flush=True)
-                    if done==total:
-                        print(json.dumps(status('complete')),flush=True);return
-    raise AssertionError((done,total))
+            for offset in range(0,len(pending),case_batch):
+                group=pending[offset:offset+case_batch];inputs,initial,batches=build_group(data,group)
+                torch.cuda.synchronize();tick=time.perf_counter()
+                pred=sampler.sample(model,inputs,initial_noise=initial,steps=50,eta=0)
+                torch.cuda.synchronize();seconds=time.perf_counter()-tick;assert torch.isfinite(pred).all()
+                cpu_pred=pred.cpu()
+                for index,((rate,sigma),batch) in enumerate(zip(group,batches)):
+                    stem=case_name(vi,start,rate,sigma);dest=out/'cases'/(stem+'.json');predpath=out/'predictions'/(stem+'.pt')
+                    rows=[dict(video_id=spec['videos'][vi],video_index=vi,start=start,rate=rate,sigma=sigma,input_sigma=s,
+                        prediction_index=j,stats=sufficient_stats(pred[index*4+j:index*4+j+1],batch)) for j,s in enumerate(SIGMAS)]
+                    # Clone slices so torch.save does not serialize the entire group's storage for every case.
+                    save(predpath,dict(predictions=cpu_pred[index*4:(index+1)*4].clone(),input_sigmas=SIGMAS,true_sigma=sigma,
+                        rate=rate,video_index=vi,video_id=spec['videos'][vi],start=start,steps=50,weights='model',
+                        checkpoint_step=7000,protocol_id=spec['protocol_id'],model_batch_size=4*len(group)))
+                    write(dest,dict(rows=rows,seconds=seconds/len(group),group_seconds=seconds,model_batch_size=4*len(group),
+                        steps=50,protocol_id=spec['protocol_id'],prediction_file=str(predpath.relative_to(root))))
+                del pred,cpu_pred,inputs,initial,batches
+                done+=len(group);state=status('running',last_case_seconds=seconds/len(group),last_model_batch_size=4*len(group))
+                if done%12==0 or limit:print(json.dumps(state),flush=True)
+    assert done==total,(done,total)
+    print(json.dumps(status('complete')),flush=True)
 
 
 def launch(root,host,limit,cloud):
@@ -189,6 +206,19 @@ def launch(root,host,limit,cloud):
                 subprocess.run(['aliyunpan','upload',str(archive),cloud],check=True,stdout=log,stderr=subprocess.STDOUT)
             write(root/f'export_{label}.json',dict(state='uploaded',cloud=cloud+'/'+archive.name,bytes=archive.stat().st_size))
     write(root/f"{'smoke_' if limit else ''}{host}_complete.json",dict(state='complete',finished_at=time.time(),jobs=snapshot()))
+    if host=='local' and not limit and not spec['remote_ranks']:
+        summarize(root)
+        predictions=list((root/'results').glob('worker*/predictions/*.pt'))
+        assert len(predictions)==spec['expected_cases'],len(predictions)
+        state=dict(state='complete',finished_at=time.time(),prediction_files=len(predictions),
+                   report=str(root/'tables/report.json'),split=str(root/'selected200_split.json'))
+        write(root/'completion.json',state)
+        config=json.loads((root/'collection_config.json').read_text())
+        import yaml
+        path=Path(config['record']);record=yaml.safe_load(path.read_text());record.update(status='complete',
+            finished_at=time.time(),result=state,next='Selected200split and all500paired results are ready for reuse.')
+        tmp=path.with_suffix('.tmp');tmp.write_text(yaml.safe_dump(record,sort_keys=False,allow_unicode=True));tmp.replace(path)
+
 
 
 def summarize(root):

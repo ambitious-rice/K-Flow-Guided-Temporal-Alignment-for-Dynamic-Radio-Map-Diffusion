@@ -25,11 +25,12 @@ requiring all12cells to pass. The manifest records this selection rule and the
 checkpoint that produced the ranking. Keep the complete500-video results too.
 
 `prepare` freezes protocol, model, manifest, allocation and1000input bundles.
-`launch --host local` runs8workers; `launch --host remote` runs2workers and
-exports metrics first, followed by full predictions through Aliyun Drive.
-`collect` merges remote outputs, runs local ranking after all500videos finish,
-and writes `selected200_split.json`, ranking tables and explicit reuse indices.
-It marks completion only after all12000caseJSONs and prediction files are local.
+`launch --host local` runs all500videos on8localworkers and automatically ranks
+them after inference. The remote servers are reserved for later algorithms per
+user instruction. Larger inference batches can be selected using `benchmark`;
+all batching preserves each case and its four ordered input-sigma interventions.
+The local launcher writes `selected200_split.json`, ranking tables and reuse
+indices, and marks completion only after all12000caseJSONs and predictions exist.
 
 Predictions are saved as FP32 tensors of shape[4,16,1,128,128], in input-sigma
 order. All48000outputs remain available. Metrics include whole-map error,
