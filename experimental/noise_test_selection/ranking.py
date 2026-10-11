@@ -10,7 +10,7 @@ def score_video(matrices):
     wrong = a.copy()
     wrong[:, np.arange(4), np.arange(4)] = np.inf
     best_wrong = wrong.min(axis=2)
-    gains = 1 - correct / np.maximum(best_wrong, 1e-12)
+    gains = (best_wrong - correct) / np.maximum(best_wrong, 1e-12)
     return dict(score=float(gains.mean()), score_percent=float(100*gains.mean()),
                 correct_unobserved_mse=float(correct.mean()),
                 correct_minimum_cells=int((correct <= best_wrong + 1e-12).sum()),

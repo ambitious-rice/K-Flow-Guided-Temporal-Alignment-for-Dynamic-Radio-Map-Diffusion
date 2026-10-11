@@ -23,6 +23,7 @@ def test_scale_invariance_and_tie_break():
     assert score_video(a)['score']==score_video(a*100)['score']
     items=[dict(video_id=v,**score_video(a)) for v in ['z','a']]
     assert [x['video_id'] for x in ranked(items)]==['a','z']
+    assert score_video(np.zeros((3,4,4)))['score']==0
 
 
 def test_window_pooling_uses_counts():
