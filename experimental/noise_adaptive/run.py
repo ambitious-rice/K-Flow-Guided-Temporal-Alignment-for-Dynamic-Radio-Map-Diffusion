@@ -175,7 +175,7 @@ def worker(root, rank, phase):
                     squared_clean_error=(target.double()-u['mean'].double()).square(),
                     q=job['q'], true_sigma=sigma, identity=u['identity']))
                 rows.append(dict(variant=variant['name'],seconds=u['seconds']))
-            write(done,dict(job=job,seconds=time.time()-tick,rows=rows))
+            write(done,dict(job=job,seconds=time.time()-tick,rows=rows,gpu=torch.cuda.get_device_name()))
         else:
             calibrations=json.loads((root/'calibration.json').read_text())
             baselines={name:reconstruction(sampler,model,b,initial,q,dest/'reconstruction'/f'{name}.pt')
@@ -203,7 +203,7 @@ def worker(root, rank, phase):
                         q_history=trajectory+[q],timing_meta=u['meta'])
                     rows.append(row);trajectory.append(q);q=next_q
                     write(dest/'partial.json',dict(job=job,rows=rows,baselines=baselines))
-            write(done,dict(job=job,rows=rows,baselines=baselines,seconds=time.time()-tick))
+            write(done,dict(job=job,rows=rows,baselines=baselines,seconds=time.time()-tick,gpu=torch.cuda.get_device_name()))
         completed+=1;status('running',last_job=job['id'],last_seconds=time.time()-tick)
         print(json.dumps(dict(phase=phase,rank=rank,completed=completed,job=job['id'],seconds=time.time()-tick)),flush=True)
     status('complete')
@@ -271,7 +271,7 @@ def summarize(root):
         d=json.loads(p.read_text());job=d['job'];true=job['sigma']
         for row in d['rows']:
             m=merge_stats([row['reconstruction']['stats']]);err=row['estimated_sigma']-true
-            long.append(dict(video_id=job['entry']['video_id'],true_sigma=true,variant=row['variant'],round=row['round'],
+            long.append(dict(video_id=job['entry']['video_id'],gpu=d['gpu'],true_sigma=true,variant=row['variant'],round=row['round'],
                 estimated_sigma=row['estimated_sigma'],sigma_error=err,absolute_sigma_error=abs(err),
                 squared_sigma_error=err**2,variance_error=row['estimated_sigma']**2-true**2,
                 estimator_seconds=row['cumulative_estimator_seconds'],deployment_seconds=row['deployment_seconds'],
@@ -344,7 +344,12 @@ def main():
     p.add_argument('--phase',choices=['calibration','evaluation']);p.add_argument('--cloud')
     a=p.parse_args();torch.set_num_threads(4);root=a.root.resolve()
     if a.mode=='worker':worker(root,a.rank,a.phase)
-    elif a.mode=='launch':launch(root,a.cloud)
+    elif a.mode=='launch':
+        try:launch(root,a.cloud)
+        except Exception as exc:
+            previous=json.loads((root/'jobs.json').read_text()) if (root/'jobs.json').exists() else {}
+            write(root/'jobs.json',dict(previous,state='failed',error=repr(exc),failed_at=time.time()))
+            raise
     else:globals()[a.mode](root)
 
 
