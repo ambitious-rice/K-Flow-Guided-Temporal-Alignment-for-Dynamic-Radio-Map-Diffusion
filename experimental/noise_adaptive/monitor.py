@@ -66,18 +66,19 @@ print(json.dumps({"export": read(root / "export.json"),
 def collect(root, remote, exported, remaining):
     destination = root/'remote_results'
     destination.mkdir(parents=True, exist_ok=True)
-    archive = destination/'results.tar.gz'
     cloud = remote['cloud'].rstrip('/') + '/results.tar.gz'
     log('download_started', cloud=cloud, destination=str(destination))
     # A previous interrupted download must not be mistaken for the complete file.
-    if archive.exists():
-        archive.rename(destination/f'results.interrupted-{time.time_ns()}.tar.gz')
+    for previous in destination.rglob('results.tar.gz'):
+        previous.rename(previous.with_name(f'results.interrupted-{time.time_ns()}.tar.gz'))
     with (root/'download_results.log').open('a') as output:
         subprocess.run(['aliyunpan', 'download', '--np', '--saveto', str(destination), cloud],
                        stdout=output, stderr=subprocess.STDOUT, check=True,
                        timeout=max(1, remaining))
-    if not archive.is_file():
-        raise FileNotFoundError(f'Download did not produce {archive}')
+    archives = [path for path in destination.rglob('results.tar.gz') if path.is_file()]
+    if len(archives) != 1:
+        raise ValueError(f'Expected one downloaded results.tar.gz beneath {destination}; found {archives}')
+    archive = archives[0]
     expected_bytes = exported.get('bytes')
     if expected_bytes is not None and archive.stat().st_size != int(expected_bytes):
         raise ValueError(f'Archive size differs: {archive.stat().st_size} != {expected_bytes}')
