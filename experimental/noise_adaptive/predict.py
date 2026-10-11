@@ -1,12 +1,18 @@
 """Held-out draws with numeric frame seeds and reversible short-window inference."""
 from contextlib import contextmanager
 import time
+from types import MethodType
 
 import torch
 from diffusers import DDIMScheduler
 
 from experimental.paper_evaluation.randomness import balanced_folds, ensemble_initial
 from experimental.noise_estimation_iterative.core import repeat
+
+from rmdm_hvdit_v4_joint.model.attention import (
+    _scaled_cosine_qk, _natten_attention, reference_neighborhood_attention,
+)
+from rmdm_hvdit_v4_joint.model.rope import apply_separable_rope
 
 PUBLIC_KEYS = frozenset(('building', 'vehicle', 'observed_rss', 'sampling_mask',
                          'sampling_rate', 'measurement_variance'))
@@ -59,6 +65,31 @@ def masked_inputs(inputs, assignment, fold):
     return result
 
 
+def _spatial_only_forward(self, state, coordinates):
+    """Exact temporal-kernel-one attention via independent 2-D frames.
+
+    Keep the original three-axis RoPE before folding time into batch; NATTEN
+    rejects a singleton kernel axis, so its equivalent na2d operation is used.
+    """
+    batch, frames, height, width, _ = state.shape
+    qkv = self.qkv(state).reshape(*state.shape[:-1], 3, self.heads, self.head_dim)
+    q, k, v = qkv.unbind(-3)
+    q, k = _scaled_cosine_qk(q, k, self.logit_scale)
+    q = apply_separable_rope(q, coordinates, self.rope_axis_dims)
+    k = apply_separable_rope(k, coordinates, self.rope_axis_dims)
+    shape = (batch * frames, height, width, self.heads, self.head_dim)
+    q, k, v = (value.reshape(shape).contiguous() for value in (q, k, v))
+    kernel = tuple(self.kernel_size[1:])
+    if self.backend == 'natten':
+        attended = _natten_attention(q, k, v, kernel)
+    elif self.backend == 'reference':
+        attended = reference_neighborhood_attention(q, k, v, kernel)
+    else:
+        raise ValueError(f'Unsupported neighborhood attention backend: {self.backend}')
+    attended = attended.reshape(batch, frames, height, width, self.heads*self.head_dim)
+    return self.projection(self.dropout(attended))
+
+
 @contextmanager
 def short_window_context(model, window):
     if window not in (4, 16):
@@ -71,6 +102,8 @@ def short_window_context(model, window):
                   for block in blocks]
     frames = denoiser.frames
     kernels = [attention.kernel_size for attention in attentions]
+    absent = object()
+    forwards = [attention.__dict__.get("forward", absent) for attention in attentions]
     if frames != 16 or denoiser.temporal_patch != 2 or denoiser.temporal_factor != 2:
         raise ValueError('Short-window adaptation requires the original W16 hierarchy')
     try:
@@ -79,11 +112,16 @@ def short_window_context(model, window):
             if len(kernel) != 3:
                 raise ValueError('Expected 3-D local attention')
             attention.kernel_size = (1, *kernel[1:])
+            attention.forward = MethodType(_spatial_only_forward, attention)
         yield
     finally:
         denoiser.frames = frames
-        for attention, kernel in zip(attentions, kernels):
+        for attention, kernel, forward in zip(attentions, kernels, forwards):
             attention.kernel_size = kernel
+            if forward is absent:
+                attention.__dict__.pop("forward", None)
+            else:
+                attention.forward = forward
 
 
 def _synchronize(device):
@@ -174,4 +212,5 @@ def collect(model, diffusion, inputs, *, video_index, start, seed, folds=4,
                   steps=steps, seed=seed, seed_stream_stride=8, skipped_empty_folds=skipped,
                   short_window_adaptation=window == 4, retrained=False,
                   local_temporal_kernel=1 if window == 4 else 3,
+                  local_attention_execution="framewise_2d_equivalent_kt1" if window == 4 else "original_3d",
                   rope='existing per-window normalized [-1,1] token coordinates; no learned position changes'))

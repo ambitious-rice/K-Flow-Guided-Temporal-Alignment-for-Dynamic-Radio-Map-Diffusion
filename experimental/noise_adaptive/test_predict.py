@@ -66,6 +66,8 @@ def test_context_restores_on_exception():
     assert model.denoiser.frames == 16
     assert model.denoiser.local_encoder[0].attention.kernel_size == (3, 7, 7)
     assert model.denoiser.local_decoder[0].attention.kernel_size == (3, 7, 7)
+    assert 'forward' not in model.denoiser.local_encoder[0].attention.__dict__
+    assert 'forward' not in model.denoiser.local_decoder[0].attention.__dict__
 
 
 def test_numeric_seed_prefix_and_physical_frames():
@@ -107,3 +109,31 @@ def test_batch_timing_accounting():
     assert sum(b['seconds'] for b in batches) + shared == pytest.approx(result['seconds'])
     prefix_four = sum(b['seconds'] for b in batches if b['chunk_start'] == 0 and b['member_start'] == 0) + shared
     assert 0 < prefix_four <= result['seconds']
+
+
+def test_spatial_wrapper_equals_reference_temporal_kernel_one():
+    from rmdm_hvdit_v4_joint.model.attention import NeighborhoodSelfAttention
+    from rmdm_hvdit_v4_joint.model.rope import grid_coordinates
+    attention = NeighborhoodSelfAttention(12, 6, kernel_size=(1, 3, 3),
+        rope_axis_dims=(2, 2, 2), backend='reference', dropout=0.).eval()
+    generator = torch.Generator().manual_seed(731)
+    state = torch.randn((2, 2, 4, 4, 12), generator=generator)
+    coordinates = grid_coordinates(2, 4, 4, device=torch.device('cpu'))
+    expected = attention(state, coordinates)
+    attention.kernel_size = (3, 3, 3)
+    model = fake_model()
+    model.denoiser.local_encoder[0].attention = attention
+    assert 'forward' not in attention.__dict__
+    with short_window_context(model, 4):
+        actual = attention(state, coordinates)
+        torch.testing.assert_close(actual, expected, rtol=1e-6, atol=1e-6)
+        assert 'forward' in attention.__dict__
+    assert 'forward' not in attention.__dict__
+    assert attention.kernel_size == (3, 3, 3)
+    original_override = lambda *args: None
+    attention.forward = original_override
+    with pytest.raises(RuntimeError):
+        with short_window_context(model, 4):
+            raise RuntimeError('restore existing override')
+    assert attention.forward is original_override
+    assert model.denoiser.frames == 16
