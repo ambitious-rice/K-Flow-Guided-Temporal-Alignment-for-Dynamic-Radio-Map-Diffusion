@@ -137,4 +137,12 @@ def main():
 
 
 if __name__=='__main__':
-    main()
+    try:
+        main()
+    except Exception as exc:
+        if '--out' in sys.argv:
+            path=Path(sys.argv[sys.argv.index('--out')+1])/'queue_status.json'
+            state=json.loads(path.read_text()) if path.exists() else {}
+            state.update(state='failed',error=repr(exc),updated_at=now())
+            write(path,state)
+        raise

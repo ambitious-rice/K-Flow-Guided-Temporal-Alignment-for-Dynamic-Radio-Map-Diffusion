@@ -47,12 +47,16 @@ def main():
     output=follow['output_root'];destination=project/'runs/noise_adaptive_remote_20261011/w4_efficiency_v1'
     destination.mkdir(parents=True,exist_ok=True)
     previous=None;deadline=time.monotonic()+30*3600
-    terminal={'failed','resource_wait_timeout','run_timeout','resource_conflict_before_stage','stopped_resource_contention'}
+    terminal={'failed','resource_wait_timeout','run_timeout','resource_conflict_before_stage','stopped_resource_contention','queue_process_missing'}
     while time.monotonic()<deadline:
         try:
             result=subprocess.run(ssh+['cat '+shlex.quote(output+'/queue_status.json')],
                 check=True,capture_output=True,text=True,timeout=30)
             live=json.loads(result.stdout);state=live['state']
+            if state not in terminal and state!='complete':
+                process=subprocess.run(ssh+[f"ps -p {int(live['pid'])} -o args="],capture_output=True,text=True,timeout=30)
+                if process.returncode or 'experimental.noise_adaptive.queue_efficiency' not in process.stdout:
+                    state='queue_process_missing';live['state']=state
             d=json.loads(run.read_text());follow=d['w4_efficiency_followup']
             follow.update(status=state,latest_remote_state=live,last_checked_at=now(),local_monitor_pid=os.getpid())
             d['status']='w4_efficiency_'+state;d['last_verified_at']=now();write(run,d)
